@@ -1,0 +1,5 @@
+Dependencias intaladas en MOVILCOFRONTEND:
+	- Tailwind CSS	- npm install tailwindcss @tailwindcss/vite
+	- Axios	- npm i axios
+	- React Router Dom - npm install react-router-dom
+	- React Redux Toolkit - npm install @reduxjs/toolkit react-redux

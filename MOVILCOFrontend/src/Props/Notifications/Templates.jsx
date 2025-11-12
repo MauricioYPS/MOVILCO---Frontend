@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 
-// --- Plantillas quemadas (según tu HTML) ---
 const PLANTILLAS = {
   incumplimiento: {
     asunto: "INCUMPLIMIENTO PRESUPUESTO [Mes Actual]",

@@ -1,0 +1,13 @@
+Estadísticas Historico y mensajes en información ndel funcionario 
+Ver toda la información que se ve en un momento 
+Administrador es el único que alimenta 
+
+todo asesor labora 30 días hábiles 
+si el asesor ingresa un 15 a trabajar tiene 16 días hablidaes de trabajo
+
+30 das tengo que hacer 13, si solo trabaje 25 cuantos 
+
+25/13 = accesos
+
+dias laborados / créditos = numero de presupuesto
+Novedad de ingreso 

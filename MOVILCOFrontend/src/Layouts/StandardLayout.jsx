@@ -8,7 +8,7 @@ export default function StandardLayout() {
         <header>
             <NavBar></NavBar>
         </header>
-        <main>
+        <main className='mt-16'>
             <Outlet></Outlet>
         </main>
         <footer>

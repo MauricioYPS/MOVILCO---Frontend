@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+.red-movilco{
+    background-color: rgb(193, 0, 7);
+}
+.hover\:red-movilco:hover{
+    background-color: rgb(161, 0, 6);
+}

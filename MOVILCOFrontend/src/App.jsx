@@ -6,7 +6,8 @@ import NotFound from './Pages/NotFound'
 import StandardLayout from './Layouts/StandardLayout'
 import Advisors from './Pages/Advisor'
 import MessageHistory from './Pages/MessageHistory'
-import NewAdvisor from './Pages/Advisors'
+import AdvisorDeails from './Pages/AdvisorDetails'
+import Coordinators from './Pages/Coordinators'
 
 const router = createBrowserRouter([
   {
@@ -16,7 +17,8 @@ const router = createBrowserRouter([
       { path: "/home", element: <Home></Home> },
       { path: "/Advisors", element: <Advisors></Advisors> },
       { path: "/MessageHistory", element: <MessageHistory></MessageHistory>},
-      { path: "/newAdvisor", element: <NewAdvisor></NewAdvisor> }
+      { path: "/AdvisorDetails", element: <AdvisorDeails></AdvisorDeails>},
+      { path: "/Coordinators", element: <Coordinators></Coordinators>}
     ],
   },
   { path: "/*", element: <NotFound></NotFound> }

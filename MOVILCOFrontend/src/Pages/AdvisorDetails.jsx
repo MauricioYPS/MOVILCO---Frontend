@@ -13,7 +13,7 @@ const INITIAL_NOTES = [
     },
 ];
 
-export default function NewAdvisor({ onBack }) {
+export default function AdvisorDetails({ onBack }) {
     const [modalOpen, setModalOpen] = useState(false);
     const [noteText, setNoteText] = useState("");
     const [notes, setNotes] = useState(INITIAL_NOTES);
@@ -268,7 +268,7 @@ function CoordinatorSidebar() {
                     </SidebarItem></li>
                     <li className=" hover:red-movilco"><SidebarItem iconPath="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6">Metas</SidebarItem></li>
                     <li className=" hover:red-movilco"><SidebarItem iconPath="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                        Novedades
+                        Notificaciones
                     </SidebarItem></li>
                 </ol>
 
@@ -420,7 +420,7 @@ function NotificationModal({ open, onClose, asesorNombre = "Juan Pérez" }) {
 
 function StatCard({ icon, label, value }) {
     return (
-        <div className="bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4">
+        <div className="bg-white p-6 rounded-xl shadow-sm flex items-center space-x-4">
             <div className="p-3 bg-red-100 rounded-full">{icon}</div>
             <div>
                 <p className="text-sm text-gray-500">{label}</p>

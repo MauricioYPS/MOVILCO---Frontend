@@ -6,8 +6,8 @@ import {NavLink} from "react-router-dom";
 const NAV_ITEMS = [
   { id: "dashboard",  label: "Dashboard",            icon: "speedometer-outline", link: "/" },
   { id: "asesores",   label: "Asesores",             icon: "people-outline", link: "/Advisors" },
-  { id: "coordinadores", label: "Coordinadores",     icon: "person-circle-outline" },
-  { id: "directores", label: "Directores",           icon: "star-outline" },
+  { id: "coordinadores", label: "Coordinadores",     icon: "person-circle-outline", link: "/Coordinators"  },
+  { id: "directores", label: "Directores",           icon: "star-outline"},
   { id: "metas",      label: "Registro Metas",       icon: "cloud-upload-outline" },
   { id: "historial",  label: "Historial y Reportes", icon: "archive-outline" },
 ];

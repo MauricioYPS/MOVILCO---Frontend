@@ -1,24 +1,39 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { mockAsesores } from "../Props/Advisors/datosquemados"
+import { useNavigate } from "react-router-dom"
 import AdvisorsListItem from "../Props/Advisors/AdvisorsListItem"
 import AdvisorKpiCard from "../Props/Advisors/AdvisorKpiCard"
 import AdvisorFilterDrawer from "../Props/Advisors/AdvisorFilterDrawer"
 import {
-    fetchNomina,
-    selectNomina,
-    selectNominaError,
-    selectNominaLoading
-} from "../../store/reducers/nominaReducers"
-import {
-    fetchSiapp,
-    selectSiapp,
-    selectSiappError,
-    selectSiappLoading
-} from "../../store/reducers/siappReducers"
-
+    fetchAdvisorsByCoordinator,
+    selectCoordinatorAdvisors,
+    selectCoordinatorAdvisorsError,
+    selectCoordinatorAdvisorsLoading,
+    selectCoordinatorId,
+    selectCoordinatorMeta,
+    setCoordinatorPeriod
+} from "../../store/reducers/advisorsReducers"
 const META_CONEXIONES = 13
 const DIAS_META = 30
+const clampPercent = (value) => Math.min(100, Math.max(0, Number(value) || 0))
+const normalizeNovedades = (value) => {
+    const list = Array.isArray(value) ? value : value ? [value] : []
+    return list
+        .map((item) => {
+            if (!item) return null
+            if (typeof item === "string" || typeof item === "number") return String(item)
+            if (item && typeof item === "object") {
+                const tipo = item.tipo || "Novedad"
+                const descripcion = item.descripcion || ""
+                const inicio = item.fecha_inicio ? `(${item.fecha_inicio}` : ""
+                const fin = item.fecha_fin ? `${inicio ? " - " : "("}${item.fecha_fin}` : inicio ? ")" : ""
+                const fechas = inicio ? `${inicio}${fin || ")"}` : ""
+                return `${tipo}: ${descripcion}${fechas ? ` ${fechas}` : ""}`.trim()
+            }
+            return null
+        })
+        .filter(Boolean)
+}
 
 const STATUS_OPTIONS = [
     { id: "incumplimiento", label: "Con Mensajes Pendientes" },
@@ -26,37 +41,18 @@ const STATUS_OPTIONS = [
     { id: "fin_contrato", label: "Finaliza Contrato (prox. 30 dias)" }
 ]
 
-const normalizeName = (value = "") =>
-    value
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .trim()
-
-const resolveDiasLaborados = (registro) => {
-    if (typeof registro?.dias_laborados === "number") {
-        return registro.dias_laborados
-    }
-
-    if (typeof registro?.novedad === "string") {
-        const match = registro.novedad.match(/(\d+)/)
-        if (match) {
-            const diasAusencia = Number(match[1])
-            if (!Number.isNaN(diasAusencia)) {
-                return Math.max(0, DIAS_META - diasAusencia)
-            }
-        }
-    }
-
-    return DIAS_META
-}
-
 const matchesStatusFilter = (asesor, status) => {
     switch (status) {
         case "incumplimiento":
-            return asesor.status === "incumplimiento" || (asesor.cumplimiento ?? 0) < 80
+            if (asesor.status) {
+                return asesor.status === "incumplimiento"
+            }
+            return (asesor.cumplimiento ?? 0) < 80
         case "completas":
-            return asesor.status === "completas" || (asesor.cumplimiento ?? 0) === 100
+            if (asesor.status) {
+                return asesor.status === "completas"
+            }
+            return (asesor.cumplimiento ?? 0) === 100
         case "novedades":
             return asesor.status === "novedades"
         case "fin_contrato":
@@ -92,23 +88,28 @@ export default function Advisors() {
     const [sortOrder, setSortOrder] = useState("desc")
 
     const dispatch = useDispatch()
-    const nomina = useSelector(selectNomina)
-    const nominaLoading = useSelector(selectNominaLoading)
-    const nominaError = useSelector(selectNominaError)
-    const siapp = useSelector(selectSiapp)
-    const siappLoading = useSelector(selectSiappLoading)
-    const siappError = useSelector(selectSiappError)
+    const navigate = useNavigate()
+    const coordinatorAdvisors = useSelector(selectCoordinatorAdvisors)
+    const advisorsLoading = useSelector(selectCoordinatorAdvisorsLoading)
+    const advisorsError = useSelector(selectCoordinatorAdvisorsError)
+    const coordinatorId = useSelector(selectCoordinatorId)
+    const coordinatorMeta = useSelector(selectCoordinatorMeta)
 
     const selectAllRef = useRef(null)
+    const lastFetchRef = useRef({ id: null, period: null })
 
     useEffect(() => {
-        dispatch(fetchNomina())
-        dispatch(fetchSiapp())
-    }, [dispatch])
+        if (!coordinatorId) return
+        const comboChanged =
+            coordinatorId !== lastFetchRef.current.id || coordinatorMeta.period !== lastFetchRef.current.period
+        if (!comboChanged) return
+        lastFetchRef.current = { id: coordinatorId, period: coordinatorMeta.period }
+        dispatch(fetchAdvisorsByCoordinator({ coordinatorId, period: coordinatorMeta.period }))
+    }, [dispatch, coordinatorId, coordinatorMeta.period])
 
     useEffect(() => {
         setSelectedIds((prev) => {
-            const available = new Set((Array.isArray(nomina) ? nomina : []).map((item) => item.raw_row))
+            const available = new Set((Array.isArray(coordinatorAdvisors) ? coordinatorAdvisors : []).map((item) => item.id))
             if (available.size === 0) return prev
             const next = new Set()
             prev.forEach((id) => {
@@ -118,74 +119,63 @@ export default function Advisors() {
             })
             return next
         })
-    }, [nomina])
-
-    const ventasPorNombre = useMemo(() => {
-        const counts = new Map()
-        if (!Array.isArray(siapp)) return counts
-        siapp.forEach((registro) => {
-            const nombreBase =
-                registro?.nombre_funcionario ??
-                registro?.asesor ??
-                registro?.nombreAsesor ??
-                registro?.nombre
-            const key = normalizeName(nombreBase || "")
-            if (!key) return
-            counts.set(key, (counts.get(key) ?? 0) + 1)
-        })
-        return counts
-    }, [siapp])
-
-    const deriveStatusFromNomina = (registro) => {
-        if (!registro) return "en_progreso"
-        if (registro.novedad) return "novedades"
-        if (registro.estado_envio_presupuesto === "ATRASADO") return "incumplimiento"
-        if (registro.fecha_fin_contrato) {
-            const fin = new Date(registro.fecha_fin_contrato)
-            const hoy = new Date()
-            const limite = new Date()
-            limite.setDate(hoy.getDate() + 30)
-            if (fin <= limite) return "fin_contrato"
-        }
-        if (registro.estado_envio_presupuesto === "ENVIADO") return "completas"
-        return "en_progreso"
-    }
+    }, [coordinatorAdvisors])
 
     const apiAsesores = useMemo(() => {
-        if (!Array.isArray(nomina)) return []
+        if (!Array.isArray(coordinatorAdvisors)) return []
 
-        return nomina.map((item, idx) => {
-            const nombre = item.nombre_funcionario ?? "Funcionario sin nombre"
-            const key = normalizeName(nombre)
-            const diasLaborados = Math.max(0, Math.min(resolveDiasLaborados(item), DIAS_META))
-            const prorrateo = Number(((META_CONEXIONES / DIAS_META) * diasLaborados).toFixed(2))
-            const ventas = ventasPorNombre.get(key) ?? 0
-            const cumplimiento =
-                prorrateo > 0
-                    ? Math.min(100, Number(((ventas / prorrateo) * 100).toFixed(2)))
-                    : 0
+        return coordinatorAdvisors.map((item, idx) => {
+            const ventas = Number(item.ventas ?? 0)
+            const prorrateo = Number(item.prorrateo ?? META_CONEXIONES) || META_CONEXIONES
+            const meta = Number(prorrateo) || prorrateo
+            const cumplimientoRaw = meta ? (ventas / meta) * 100 : 0
+            const cumplimiento = clampPercent(cumplimientoRaw)
+            const novedades = normalizeNovedades(item.novedades)
+            const contratoFin = null
+
+            let status = "en_progreso"
+            if (contratoFin) status = "fin_contrato"
+            else if (novedades && novedades.length > 0) status = "novedades"
+            else if (cumplimiento < 80) status = "incumplimiento"
+            else if (cumplimiento >= 100) status = "completas"
 
             return {
-                id: item.raw_row ?? idx,
-                nombre,
-                cargo: item.contratado === "SI" ? "Asesor Comercial" : "Sin contrato activo",
-                cedula: item.cedula ?? "N/A",
-                distrito: item.distrito ?? item.distrito_claro ?? "N/A",
-                regional: item.distrito_claro ?? "N/A",
-                contrato_inicio: item.fecha_inicio_contrato ? item.fecha_inicio_contrato.split("T")[0] : "N/A",
-                contrato_fin: item.fecha_fin_contrato ? item.fecha_fin_contrato.split("T")[0] : null,
-                novedades: item.novedad,
+                id: item.id ?? idx,
+                nombre: item.name ?? "Asesor sin nombre",
+                cargo: "Asesor Comercial",
+                cedula: item.document_id ?? "N/A",
+                distrito: item.district ?? "N/A",
+                regional: item.district_claro ?? item.coordinator_name ?? "N/A",
+                contrato_inicio: "N/A",
+                contrato_fin: contratoFin,
+                novedades,
                 ventas,
                 prorrateo,
-                diasLaborados,
+                diasLaborados: Number(item.dias_laborados ?? DIAS_META) || DIAS_META,
                 cumplimiento,
-                status: deriveStatusFromNomina(item)
+                status,
+                telefono: item.phone ?? "",
+                correo: item.email ?? "",
+                meta
             }
         })
-    }, [nomina, ventasPorNombre])
+    }, [coordinatorAdvisors])
 
-    const dataset = apiAsesores.length > 0 ? apiAsesores : mockAsesores
-    const usingMockData = apiAsesores.length === 0
+    const dataset = apiAsesores
+
+    const averageCompliance = useMemo(() => {
+        if (dataset.length === 0) return 0
+        const total = dataset.reduce((acc, a) => acc + clampPercent(a.cumplimiento ?? 0), 0)
+        const avg = total / dataset.length
+        return clampPercent(Number(avg.toFixed(2)))
+    }, [dataset])
+
+    const averageIncumplimiento = useMemo(() => {
+        if (dataset.length === 0) return 0
+        const total = dataset.reduce((acc, a) => acc + (100 - clampPercent(a.cumplimiento ?? 0)), 0)
+        const avg = total / dataset.length
+        return clampPercent(Number(avg.toFixed(2)))
+    }, [dataset])
 
     const counts = useMemo(
         () => ({
@@ -196,6 +186,19 @@ export default function Advisors() {
         }),
         [dataset]
     )
+
+    const periodOptions = useMemo(() => {
+        const now = new Date()
+        const currentYear = now.getFullYear()
+        const currentMonth = now.getMonth() + 1
+        const options = []
+        for (let m = currentMonth; m >= 1; m--) {
+            const month = String(m).padStart(2, "0")
+            const value = `${currentYear}-${month}`
+            options.push({ value, label: value })
+        }
+        return options
+    }, [])
 
     const filteredAdvisors = useMemo(() => {
         let result = [...dataset]
@@ -297,19 +300,24 @@ export default function Advisors() {
         setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
     }
 
-    if ((nominaLoading || siappLoading) && apiAsesores.length === 0) {
-        return <p className="p-6 text-gray-700">Cargando informacion de nomina y ventas...</p>
+    const handleViewAdvisor = (advisor) => {
+        if (!advisor?.id) return
+        navigate(`/AdvisorDetails/${advisor.id}`, { state: { advisor } })
     }
 
-    if ((nominaError || siappError) && apiAsesores.length === 0) {
-        return <p className="p-6 text-red-600">Error al cargar los datos: {nominaError || siappError}</p>
+    if (advisorsLoading && apiAsesores.length === 0) {
+        return <p className="p-6 text-gray-700">Cargando asesores del coordinador y métricas...</p>
+    }
+
+    if (advisorsError && apiAsesores.length === 0) {
+        return <p className="p-6 text-red-600">Error al cargar los asesores: {advisorsError}</p>
     }
 
     const kpiCards = [
         {
-            id: "incumplimiento",
-            title: "Incumplimiento de Metas",
-            value: counts.incumplimiento,
+            id: "promIncumplimiento",
+            title: "Promedio Incumplimiento",
+            value: `${Math.round(averageIncumplimiento)}% `,
             accentColor: "bg-red-100",
             statusKey: "incumplimiento",
             icon: (
@@ -323,11 +331,11 @@ export default function Advisors() {
             )
         },
         {
-            id: "completas",
-            title: "Metas Completas (100%)",
-            value: counts.completas,
+            id: "promCumplimiento",
+            title: "Promedio Cumplimiento",
+            value: `${Math.round(averageCompliance)}%`,
             accentColor: "bg-green-100",
-            statusKey: "completas",
+            statusKey: null,
             icon: (
                 <svg className="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0Z" />
@@ -400,7 +408,7 @@ export default function Advisors() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                                 <input
                                     type="search"
                                     value={query}
@@ -408,6 +416,23 @@ export default function Advisors() {
                                     placeholder="Buscar por nombre, distrito..."
                                     className="block w-full rounded-md border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200 sm:w-64"
                                 />
+                                <select
+                                    value={coordinatorMeta.period}
+                                    onChange={(e) => {
+                                        const value = e.target.value
+                                        dispatch(setCoordinatorPeriod(value))
+                                        dispatch(fetchAdvisorsByCoordinator({ coordinatorId, period: value }))
+                                        lastFetchRef.current = { id: coordinatorId, period: value }
+                                    }}
+                                    disabled={advisorsLoading}
+                                    className="block w-full rounded-md border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200 disabled:cursor-not-allowed disabled:bg-gray-100 sm:w-40"
+                                >
+                                {periodOptions.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
                                 <button
                                     onClick={() => setIsDrawerOpen(true)}
                                     className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto"
@@ -416,6 +441,12 @@ export default function Advisors() {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                     </svg>
                                     Filtros
+                                </button>
+                                <button
+                                    onClick={handleClearFilters}
+                                    className="flex w-full items-center justify-center gap-2 rounded-md bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 sm:w-auto"
+                                >
+                                    Limpiar filtros
                                 </button>
                                 <button
                                     onClick={handleToggleSort}
@@ -428,15 +459,12 @@ export default function Advisors() {
                                 </button>
                             </div>
                         </div>
-                        {siappLoading && (
-                            <p className="mt-2 text-xs text-gray-500">Actualizando ventas desde SIAPP...</p>
+                        {advisorsLoading && (
+                            <p className="mt-2 text-xs text-gray-500">Actualizando lista de asesores y métricas...</p>
                         )}
-                        {siappError && (
-                            <p className="mt-2 text-xs text-red-500">No fue posible sincronizar SIAPP: {siappError}</p>
-                        )}
-                        {usingMockData && (
-                            <p className="mt-2 text-xs text-gray-500">
-                                Mostrando datos de ejemplo mientras llega la informacion real.
+                        {advisorsError && (
+                            <p className="mt-2 text-xs text-red-500">
+                                No fue posible obtener asesores o métricas: {advisorsError}
                             </p>
                         )}
                     </div>
@@ -466,6 +494,7 @@ export default function Advisors() {
                                     advisor={asesor}
                                     checked={selectedIds.has(asesor.id)}
                                     onToggle={handleToggleSelect}
+                                    onView={handleViewAdvisor}
                                     trend={buildTrend(asesor)}
                                 />
                             ))}
@@ -478,17 +507,7 @@ export default function Advisors() {
                     </div>
 
                     <div className="border-t border-gray-200 p-4 sm:p-6">
-                        <nav className="flex items-center justify-between text-sm text-gray-600">
-                            <p>Pagina 1 de 1</p>
-                            <div className="space-x-2">
-                                <button className="rounded-md border border-gray-300 px-3 py-1 transition hover:bg-gray-100" disabled>
-                                    Anterior
-                                </button>
-                                <button className="rounded-md border border-gray-300 px-3 py-1 transition hover:bg-gray-100" disabled={visibleAsesores === 0}>
-                                    Siguiente
-                                </button>
-                            </div>
-                        </nav>
+
                     </div>
                 </section>
             </div>

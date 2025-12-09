@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react"
+import { useEffect, useMemo, useState,useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import {
@@ -253,49 +253,14 @@ export default function Coordinators() {
         return { totalCoordinators, totalAdvisors, totalSales, bestUnit }
     }, [filtered, meta?.total])
 
-    const handleViewTeam = (coordId) => {
-        if (!coordId) return
-        navigate(`/CoordinatorDetails/${coordId}`)
+    const handleViewTeam = (coord) => {
+        if (!coord?.id) return
+        navigate(`/CoordinatorDetails/${coord.id}`, { state: { coordinator: coord, period: meta?.period } })
     }
 
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50 font-sans text-slate-800">
-            <aside
-                className={`fixed inset-y-0 left-0 z-50 w-64 transform bg-red-700 text-white transition-transform duration-300 ease-in-out lg:static lg:inset-0 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
-            >
-                <div className="flex h-16 items-center justify-between bg-red-800 px-6 lg:hidden">
-                    <span className="text-xl font-bold">Menu</span>
-                    <button onClick={() => setSidebarOpen(false)} aria-label="Cerrar menu">
-                        <X size={24} />
-                    </button>
-                </div>
-
-                <div className="p-6">
-                    <h2 className="mt-2 mb-8 text-xl font-bold">Panel Director</h2>
-                    <nav className="space-y-2">
-                        <div className="flex items-center space-x-3 rounded-lg bg-red-800 px-4 py-3 text-white shadow-sm">
-                            <LayoutDashboard size={20} />
-                            <span className="font-medium">Dashboard General</span>
-                        </div>
-                        <div className="flex items-center space-x-3 rounded-lg px-4 py-3 text-red-100 transition-colors hover:bg-red-600">
-                            <Target size={20} />
-                            <span className="font-medium">Metas Globales</span>
-                        </div>
-                    </nav>
-                </div>
-
-                <div className="absolute bottom-0 w-full bg-red-800 bg-opacity-50 p-6">
-                    <div className="flex items-center space-x-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-red-700 font-bold">
-                            DIR
-                        </div>
-                        <div>
-                            <p className="text-sm font-semibold">Director Regional</p>
-                            <p className="text-xs text-red-200">{meta?.direction?.name ?? "Direccion"}</p>
-                        </div>
-                    </div>
-                </div>
-            </aside>
+ 
 
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
@@ -466,7 +431,7 @@ export default function Coordinators() {
                                                 </div>
                                                 <button
                                                     className="text-xs font-bold text-red-600 transition-colors hover:text-red-800"
-                                                    onClick={() => handleViewTeam(coord.id)}
+                                                onClick={() => handleViewTeam(coord)}
                                                 >
                                                     Ver equipo
                                                 </button>

@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, createSelector } from "@reduxjs/toolkit"
 import axios from "axios"
-import  {api}  from "../api"
+import { api } from "../api"
+
 const DEFAULT_COORDINATOR_ID = 26
 
 const getDefaultCoordinatorId = () => {
@@ -29,15 +30,13 @@ const normalizePayload = (payload) => {
     if (payload && typeof payload === "object") {
         return {
             coordinatorId: payload.coordinatorId ?? payload.id ?? getDefaultCoordinatorId(),
-            period: formatPeriod(payload.period),
-            persistId: payload.persistId !== false
+            period: formatPeriod(payload.period)
         }
     }
 
     return {
         coordinatorId: payload ?? getDefaultCoordinatorId(),
-        period: formatPeriod(),
-        persistId: true
+        period: formatPeriod()
     }
 }
 
@@ -66,8 +65,8 @@ const normalizeAdvisor = (advisor, coordinatorName, idx) => {
     }
 }
 
-export const fetchAdvisorsByCoordinator = createAsyncThunk(
-    "advisors/fetchByCoordinator",
+export const fetchCoordAdvisorsByCoordinator = createAsyncThunk(
+    "coordAdvisors/fetchByCoordinator",
     async (payload, { rejectWithValue }) => {
         const { coordinatorId, period } = normalizePayload(payload)
 
@@ -106,61 +105,65 @@ const initialState = {
     lastFetched: null
 }
 
-const advisorsSlice = createSlice({
-    name: "coordinatorAdvisors",
+const coordAdvisorsSlice = createSlice({
+    name: "coordAdvisors",
     initialState,
     reducers: {
-        setCoordinatorId(state, action) {
-            const incoming = action.payload ?? getDefaultCoordinatorId()
-            if (incoming === null || incoming === undefined) return
-            state.coordinatorId = incoming
+        setCoordAdvisorContext(state, action) {
+            if (action.payload?.coordinatorId !== undefined && action.payload?.coordinatorId !== null) {
+                state.coordinatorId = action.payload.coordinatorId
+            }
+            if (action.payload?.coordinator) {
+                state.coordinator = action.payload.coordinator
+            }
         },
-        setCoordinatorPeriod(state, action) {
+        setCoordAdvisorPeriod(state, action) {
             state.period = formatPeriod(action.payload)
         },
-        clearAdvisors(state) {
+        clearCoordAdvisors(state) {
             state.advisors = []
             state.coordinator = null
             state.period = formatPeriod()
+            state.total = 0
             state.error = null
             state.lastFetched = null
-            state.total = 0
         }
     },
     extraReducers: (builder) => {
         builder
-            .addCase(fetchAdvisorsByCoordinator.pending, (state) => {
+            .addCase(fetchCoordAdvisorsByCoordinator.pending, (state) => {
                 state.loading = true
                 state.error = null
             })
-            .addCase(fetchAdvisorsByCoordinator.fulfilled, (state, action) => {
+            .addCase(fetchCoordAdvisorsByCoordinator.fulfilled, (state, action) => {
                 state.loading = false
+                state.coordinatorId = action.payload?.coordinatorId ?? state.coordinatorId
                 state.advisors = action.payload?.advisors ?? []
                 state.coordinator = action.payload?.coordinator ?? null
                 state.period = action.payload?.period ?? formatPeriod()
                 state.total = action.payload?.total ?? state.advisors.length
                 state.lastFetched = Date.now()
             })
-            .addCase(fetchAdvisorsByCoordinator.rejected, (state, action) => {
+            .addCase(fetchCoordAdvisorsByCoordinator.rejected, (state, action) => {
                 state.loading = false
-                state.error = action.payload ?? "Ocurrio un error desconocido al consultar asesores."
+                state.error = action.payload ?? "Error desconocido al consultar asesores."
             })
     }
 })
 
-export const { setCoordinatorId, setCoordinatorPeriod, clearAdvisors } = advisorsSlice.actions
+export const { setCoordAdvisorContext, setCoordAdvisorPeriod, clearCoordAdvisors } = coordAdvisorsSlice.actions
 
-export const selectCoordinatorAdvisors = (state) => state.coordinatorAdvisors.advisors
-export const selectCoordinatorId = (state) => state.coordinatorAdvisors.coordinatorId
-export const selectCoordinatorAdvisorsLoading = (state) => state.coordinatorAdvisors.loading
-export const selectCoordinatorAdvisorsError = (state) => state.coordinatorAdvisors.error
-export const selectCoordinatorMeta = createSelector(
-    (state) => state.coordinatorAdvisors,
+export const selectCoordAdvisors = (state) => state.coordAdvisors.advisors
+export const selectCoordAdvisorMeta = createSelector(
+    (state) => state.coordAdvisors,
     (slice) => ({
+        coordinatorId: slice.coordinatorId,
         coordinator: slice.coordinator,
         period: slice.period,
         total: slice.total
     })
 )
+export const selectCoordAdvisorsLoading = (state) => state.coordAdvisors.loading
+export const selectCoordAdvisorsError = (state) => state.coordAdvisors.error
 
-export default advisorsSlice.reducer
+export default coordAdvisorsSlice.reducer

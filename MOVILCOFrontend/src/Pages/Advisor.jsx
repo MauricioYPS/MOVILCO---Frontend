@@ -109,7 +109,7 @@ export default function Advisors() {
 
     useEffect(() => {
         setSelectedIds((prev) => {
-            const available = new Set((Array.isArray(coordinatorAdvisors) ? coordinatorAdvisors : []).map((item) => item.id))
+            const available = new Set((Array.isArray(coordinatorAdvisors) ? coordinatorAdvisors : []).map((item) => item.advisor_id ?? item.id))
             if (available.size === 0) return prev
             const next = new Set()
             prev.forEach((id) => {
@@ -140,6 +140,7 @@ export default function Advisors() {
             else if (cumplimiento >= 100) status = "completas"
 
             return {
+                advisor_id: item.advisor_id ?? `advisor_${item.id ?? idx}`,
                 id: item.id ?? idx,
                 nombre: item.name ?? "Asesor sin nombre",
                 cargo: "Asesor Comercial",
@@ -270,19 +271,19 @@ export default function Advisors() {
 
     const handleSelectAll = (checked) => {
         if (checked) {
-            setSelectedIds(new Set(filteredAdvisors.map((advisor) => advisor.id)))
+            setSelectedIds(new Set(filteredAdvisors.map((advisor) => advisor.advisor_id)))
         } else {
             setSelectedIds(new Set())
         }
     }
 
-    const handleToggleSelect = (id) => {
+    const handleToggleSelect = (advisorId) => {
         setSelectedIds((prev) => {
             const next = new Set(prev)
-            if (next.has(id)) {
-                next.delete(id)
+            if (next.has(advisorId)) {
+                next.delete(advisorId)
             } else {
-                next.add(id)
+                next.add(advisorId)
             }
             return next
         })
@@ -301,8 +302,9 @@ export default function Advisors() {
     }
 
     const handleViewAdvisor = (advisor) => {
-        if (!advisor?.id) return
-        navigate(`/AdvisorDetails/${advisor.id}`, { state: { advisor } })
+        const targetId = advisor?.id ?? advisor?.advisor_id
+        if (!targetId) return
+        navigate(`/AdvisorDetails/${targetId}`, { state: { advisor, period: coordinatorMeta.period } })
     }
 
     if (advisorsLoading && apiAsesores.length === 0) {
@@ -373,9 +375,9 @@ export default function Advisors() {
     ]
 
     return (
-        <main className="min-h-screen bg-gray-50">
-            <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                <h1 className="mb-6 text-3xl font-bold tracking-tight text-gray-900">Resumen de Asesores</h1>
+        <main className="min-h-screen bg-gray-50 overflow-x-hidden ">
+            <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 md:px-6 lg:px-8">
+                <h1 className="mb-6 text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Resumen de Asesores</h1>
 
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                     {kpiCards.map((card) => (
@@ -486,13 +488,13 @@ export default function Advisors() {
                         </div>
                     )}
 
-                    <div className="custom-scrollbar max-h-[600px] overflow-y-auto">
+                    <div className="custom-scrollbar max-h-[70vh] overflow-y-auto overflow-x-hidden px-1 sm:px-2">
                         <ul className="divide-y divide-gray-200">
                             {filteredAdvisors.map((asesor) => (
                                 <AdvisorsListItem
                                     key={asesor.id}
                                     advisor={asesor}
-                                    checked={selectedIds.has(asesor.id)}
+                                    checked={selectedIds.has(asesor.advisor_id)}
                                     onToggle={handleToggleSelect}
                                     onView={handleViewAdvisor}
                                     trend={buildTrend(asesor)}

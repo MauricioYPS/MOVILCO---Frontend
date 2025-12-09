@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import {
-    fetchAdvisorsByCoordinator,
-    selectCoordinatorAdvisors,
-    selectCoordinatorAdvisorsError,
-    selectCoordinatorAdvisorsLoading
-} from "../../store/reducers/advisorsReducers"
+    fetchCoordAdvisorsByCoordinator,
+    selectCoordAdvisors,
+    selectCoordAdvisorsError,
+    selectCoordAdvisorsLoading,
+    selectCoordAdvisorMeta
+} from "../../store/reducers/coordAdvisorsReducers"
 import {
     fetchPayrollDetailsByUsers,
     selectPayrollDetails,
@@ -15,7 +16,12 @@ import {
 } from "../../store/reducers/payrollReducers"
 import { selectDirectionCoordinators } from "../../store/reducers/directionsReducers"
 
-const REPORT_PERIOD = "2025-09"
+const currentPeriod = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    return `${year}-${month}`
+}
 const META_CONEXIONES = 13
 const DIAS_META = 30
 
@@ -45,34 +51,41 @@ export default function CoordinatorDetails() {
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
-    const advisors = useSelector(selectCoordinatorAdvisors)
-    const advisorsLoading = useSelector(selectCoordinatorAdvisorsLoading)
-    const advisorsError = useSelector(selectCoordinatorAdvisorsError)
+    const advisors = useSelector(selectCoordAdvisors)
+    const advisorsLoading = useSelector(selectCoordAdvisorsLoading)
+    const advisorsError = useSelector(selectCoordAdvisorsError)
+    const coordMetaSlice = useSelector(selectCoordAdvisorMeta)
     const payroll = useSelector(selectPayrollDetails)
     const payrollLoading = useSelector(selectPayrollLoading)
     const payrollError = useSelector(selectPayrollError)
     const directionCoordinators = useSelector(selectDirectionCoordinators)
 
     const coordinatorMeta =
+        coordMetaSlice?.coordinator ||
         location.state?.coordinator ||
         (Array.isArray(directionCoordinators) ? directionCoordinators.find((c) => String(c.id) === String(id)) : null) ||
         {}
 
+    const selectedPeriod = location.state?.period || coordMetaSlice?.period || currentPeriod()
+        
+
     useEffect(() => {
         if (id) {
-            dispatch(fetchAdvisorsByCoordinator({ coordinatorId: id, period: REPORT_PERIOD }))
+            dispatch(fetchCoordAdvisorsByCoordinator({ coordinatorId: id, period: selectedPeriod }))
         }
-    }, [dispatch, id])
+    }, [dispatch, id, selectedPeriod])
 
     useEffect(() => {
         const entries = Array.isArray(advisors)
-            ? advisors.map((a) => ({ id: a.id, document: a.document_id || a.cedula })).filter((i) => i.id && i.document)
+            ? advisors
+                .map((a) => ({ id: a.id, document: a.document_id || a.cedula, period: selectedPeriod }))
+                .filter((i) => i.id && i.document)
             : []
 
         if (entries.length > 0) {
             dispatch(fetchPayrollDetailsByUsers(entries))
         }
-    }, [dispatch, advisors])
+    }, [dispatch, advisors, selectedPeriod])
 
     const dataset = useMemo(() => {
         if (!Array.isArray(advisors)) return []
@@ -133,33 +146,7 @@ export default function CoordinatorDetails() {
 
     return (
         <div className="flex min-h-screen bg-gray-50 font-sans text-slate-800">
-            <nav className="sticky top-0 hidden h-screen w-[14%] flex-shrink-0 flex-col justify-end bg-red-700 text-white shadow-lg lg:flex">
-                <div className="fixed top-16 bottom-40 mt-4 flex w-[14%] flex-col justify-around overflow-y-auto pr-2">
-                    <div className="p-6 text-center">
-                        <h1 className="text-2xl font-bold">Panel Coordinador</h1>
-                    </div>
-                    <ol>
-                        <li>
-                            <button className="flex w-full items-center space-x-3 px-6 py-3 text-left hover:bg-red-800">
-                                <Icon path="M3 12h18M3 6h18M3 18h18" className="h-6 w-6" />
-                                <span>Dashboard</span>
-                            </button>
-                        </li>
-                        <li>
-                            <button className="flex w-full items-center space-x-3 px-6 py-3 text-left hover:bg-red-800">
-                                <Icon path="M12 3v18m9-9H3" className="h-6 w-6" />
-                                <span>Metas</span>
-                            </button>
-                        </li>
-                    </ol>
-                </div>
-                <div className="border-t border-red-800 p-6">
-                    <button className="flex w-full items-center space-x-3 text-red-100 hover:text-white">
-                        <Icon path="M17 16l4-4m0 0-4-4m4 4H3" className="h-6 w-6" />
-                        <span>Cerrar Sesion</span>
-                    </button>
-                </div>
-            </nav>
+
 
             <main className="flex-1 pb-16 pl-0 pr-0 sm:px-6 md:p-8 lg:pl-12">
                 <div className="mb-4 flex items-center text-sm text-gray-600">
@@ -177,12 +164,36 @@ export default function CoordinatorDetails() {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900">{coordinatorMeta.name ?? "Coordinador"}</h1>
-                                <div className="mt-1 flex items-center gap-2 text-gray-500">
-                                    <Icon path="M12 2v20M2 12h20" className="h-4 w-4" />
-                                    <span className="font-medium">{coordinatorMeta.unit_type || "COORDINACION"}</span>
+                                <div className="mt-1 flex flex-wrap items-center gap-2 text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                        <Icon path="M12 2v20M2 12h20" className="h-4 w-4" />
+                                        <span className="font-medium">{coordinatorMeta.unit_type || "COORDINACION"}</span>
+                                    </span>
                                     <span className="mx-1">|</span>
-                                    <Icon path="M12 20.5 20 9a8 8 0 1 0-16 0l8 11.5Z" className="h-4 w-4" />
-                                    <span>{coordinatorMeta.district || coordinatorMeta.name}</span>
+                                    <span className="flex items-center gap-1">
+                                        <Icon path="M12 20.5 20 9a8 8 0 1 0-16 0l8 11.5Z" className="h-4 w-4" />
+                                        <span>{coordinatorMeta.district || coordinatorMeta.district_claro || coordinatorMeta.name}</span>
+                                    </span>
+                                    <span className="mx-1">|</span>
+                                    <span className="flex items-center gap-1">
+                                        <Icon path="M4 4h16v16H4z" className="h-4 w-4" />
+                                        <span>{coordinatorMeta.document_id || "N/A"}</span>
+                                    </span>
+                                    <span className="mx-1">|</span>
+                                    <span className="flex items-center gap-1">
+                                        <Icon path="M22 2 11 13" className="h-4 w-4" />
+                                        <span>{coordinatorMeta.phone || "N/A"}</span>
+                                    </span>
+                                    <span className="mx-1">|</span>
+                                    <span className="flex items-center gap-1">
+                                        <Icon path="M4 4h16v16H4z" className="h-4 w-4" />
+                                        <span>{coordinatorMeta.email || "N/A"}</span>
+                                    </span>
+                                    <span className="mx-1">|</span>
+                                    <span className={`flex items-center gap-1 ${coordinatorMeta.active ? "text-green-600" : "text-red-600"}`}>
+                                        <Icon path="M5 13l4 4L19 7" className="h-4 w-4" />
+                                        <span>{coordinatorMeta.active ? "Activo" : "Inactivo"}</span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -219,7 +230,7 @@ export default function CoordinatorDetails() {
                         <div>
                             <h2 className="text-lg font-bold text-gray-900">Equipo de Asesores</h2>
                             <p className="text-sm text-gray-500">
-                                Seguimiento del equipo. Periodo: <span className="font-medium text-gray-800">{REPORT_PERIOD}</span>
+                                Seguimiento del equipo. Periodo: <span className="font-medium text-gray-800">{selectedPeriod}</span>
                             </p>
                         </div>
                         {(advisorsLoading || payrollLoading) && <p className="text-xs text-gray-500">Actualizando datos...</p>}

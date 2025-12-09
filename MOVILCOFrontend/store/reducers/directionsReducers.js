@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import { createAsyncThunk, createSlice, createSelector } from "@reduxjs/toolkit"
 import axios from "axios"
 import { api } from "../api"
 
@@ -147,12 +147,15 @@ const directionsSlice = createSlice({
 export const { setDirectionContext, setDirectionPeriod, clearDirectionData } = directionsSlice.actions
 
 export const selectDirectionCoordinators = (state) => state.direction.data
-export const selectDirectionMeta = (state) => ({
-    directionId: state.direction.directionId,
-    direction: state.direction.direction,
-    period: state.direction.period,
-    total: state.direction.total
-})
+export const selectDirectionMeta = createSelector(
+    (state) => state.direction,
+    (slice) => ({
+        directionId: slice.directionId,
+        direction: slice.direction,
+        period: slice.period,
+        total: slice.total
+    })
+)
 export const selectDirectionLoading = (state) => state.direction.loading
 export const selectDirectionError = (state) => state.direction.error
 

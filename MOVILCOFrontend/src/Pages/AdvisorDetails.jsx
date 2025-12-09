@@ -8,7 +8,12 @@ import {
     selectPayrollLoading
 } from "../../store/reducers/payrollReducers"
 
-const REPORT_PERIOD = "2025-11"
+const currentPeriod = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    return `${year}-${month}`
+}
 const clampPercent = (value) => Math.min(100, Math.max(0, Number(value) || 0))
 const formatPeriod = (period) => {
     const [year, month] = (period || "").split("-")
@@ -55,6 +60,7 @@ export default function AdvisorDetails({ onBack }) {
     const location = useLocation()
 
     const advisorFromState = location.state?.advisor
+    const selectedPeriod = location.state?.period || currentPeriod()
     const advisorId = idParam || advisorFromState?.id
 
     const payrollDetails = useSelector(selectPayrollDetails)
@@ -65,9 +71,9 @@ export default function AdvisorDetails({ onBack }) {
 
     useEffect(() => {
         if (advisorId && !payrollDetails?.[advisorId] && !payrollLoading) {
-            dispatch(fetchPayrollDetailsByUsers([{ id: advisorId, document: advisorFromState?.cedula }]))
+            dispatch(fetchPayrollDetailsByUsers([{ id: advisorId, document: advisorFromState?.cedula, period: selectedPeriod }]))
         }
-    }, [advisorId, advisorFromState?.cedula, dispatch, payrollDetails, payrollLoading])
+    }, [advisorId, advisorFromState?.cedula, dispatch, payrollDetails, payrollLoading, selectedPeriod])
 
     const detail = payrollDetails?.[advisorId] ?? {}
     const nombre = detail.asesor_nombre || detail.nombre || detail.nombre_funcionario || advisorFromState?.nombre || "Asesor sin nombre"
@@ -102,8 +108,6 @@ export default function AdvisorDetails({ onBack }) {
 
     return (
         <div className="flex min-h-screen bg-secundario font-sans">
-            <CoordinatorSidebar />
-
             <main className="flex-1 p-6 md:p-8 lg:pl-12 pb-16">
                 <button
                     type="button"
@@ -192,7 +196,7 @@ export default function AdvisorDetails({ onBack }) {
                             </svg>
                         }
                         label="Mes Actual"
-                        value={formatPeriod(REPORT_PERIOD)}
+                        value={formatPeriod(selectedPeriod)}
                     />
                     <StatCard
                         icon={
@@ -320,66 +324,7 @@ export default function AdvisorDetails({ onBack }) {
     )
 }
 
-function CoordinatorSidebar() {
-    return (
-        <nav className="hidden lg:flex w-[14%] red-movilco text-white flex-col sticky top-0 h-auto flex-shrink-0 shadow-lg z-10 justify-end">
-            <div className="flex-1 mt-4 overflow-y-auto pr-2 fixed top-16 bottom-40 w-[14%] justify-around flex-col">
-                <div className="p-6 text-center">
-                    <h1 className="text-2xl font-bold sticky">Panel Coordinador</h1>
-                </div>
-                <ol className="">
-                    <li className="hover:red-movilco">
-                        <SidebarItem active iconPath="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                            Dashboard Asesor
-                        </SidebarItem>
-                    </li>
-                    <li className="hover:red-movilco">
-                        <SidebarItem iconPath="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                            Trazabilidad
-                        </SidebarItem>
-                    </li>
-                    <li className=" hover:red-movilco">
-                        <SidebarItem iconPath="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6">Metas</SidebarItem>
-                    </li>
-                    <li className=" hover:red-movilco">
-                        <SidebarItem iconPath="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                            Notificaciones
-                        </SidebarItem>
-                    </li>
-                </ol>
-            </div>
-            <div className="p-6 border-t border-principal-darker hover:red-movilco">
-                <button className="flex items-center space-x-3 text-red-100 hover:text-white w-full ">
-                    <SidebarIcon path="M17 16l4-4m0 0l-4-4m4 4H3" />
-                    <span>Cerrar Sesi&oacute;n</span>
-                </button>
-            </div>
-        </nav>
-    )
-}
 
-function SidebarItem({ iconPath, children, active }) {
-    return (
-        <li
-            className={`px-6 py-3 transition-colors duration-200 ${
-                active ? "bg-principal-darker font-semibold" : "hover:bg-principal-darker"
-            }`}
-        >
-            <button className="w-full flex items-center space-x-3 text-left">
-                <SidebarIcon path={iconPath} />
-                <span>{children}</span>
-            </button>
-        </li>
-    )
-}
-
-function SidebarIcon({ path }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d={path} />
-        </svg>
-    )
-}
 
 function NotificationModal({ open, onClose, asesorNombre = "Asesor" }) {
     if (!open) return null

@@ -1,0 +1,305 @@
+import { useEffect, useMemo, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
+import {
+    fetchAdvisorsByCoordinator,
+    selectCoordinatorAdvisors,
+    selectCoordinatorAdvisorsError,
+    selectCoordinatorAdvisorsLoading
+} from "../../store/reducers/advisorsReducers"
+import {
+    fetchPayrollDetailsByUsers,
+    selectPayrollDetails,
+    selectPayrollError,
+    selectPayrollLoading
+} from "../../store/reducers/payrollReducers"
+import { selectDirectionCoordinators } from "../../store/reducers/directionsReducers"
+
+const REPORT_PERIOD = "2025-09"
+const META_CONEXIONES = 13
+const DIAS_META = 30
+
+const clampPercent = (value) => Math.min(100, Math.max(0, Number(value) || 0))
+const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "CO"
+
+const Icon = ({ path, size = 20, className = "" }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        width={size}
+        height={size}
+        className={className}
+    >
+        <path d={path} />
+    </svg>
+)
+
+export default function CoordinatorDetails() {
+    const { id } = useParams()
+    const location = useLocation()
+    const navigate = useNavigate()
+    const dispatch = useDispatch()
+
+    const advisors = useSelector(selectCoordinatorAdvisors)
+    const advisorsLoading = useSelector(selectCoordinatorAdvisorsLoading)
+    const advisorsError = useSelector(selectCoordinatorAdvisorsError)
+    const payroll = useSelector(selectPayrollDetails)
+    const payrollLoading = useSelector(selectPayrollLoading)
+    const payrollError = useSelector(selectPayrollError)
+    const directionCoordinators = useSelector(selectDirectionCoordinators)
+
+    const coordinatorMeta =
+        location.state?.coordinator ||
+        (Array.isArray(directionCoordinators) ? directionCoordinators.find((c) => String(c.id) === String(id)) : null) ||
+        {}
+
+    useEffect(() => {
+        if (id) {
+            dispatch(fetchAdvisorsByCoordinator({ coordinatorId: id, period: REPORT_PERIOD }))
+        }
+    }, [dispatch, id])
+
+    useEffect(() => {
+        const entries = Array.isArray(advisors)
+            ? advisors.map((a) => ({ id: a.id, document: a.document_id || a.cedula })).filter((i) => i.id && i.document)
+            : []
+
+        if (entries.length > 0) {
+            dispatch(fetchPayrollDetailsByUsers(entries))
+        }
+    }, [dispatch, advisors])
+
+    const dataset = useMemo(() => {
+        if (!Array.isArray(advisors)) return []
+
+        return advisors.map((item, idx) => {
+            const detalle = payroll?.[item.id] ?? {}
+            const ventas = Number(detalle.ventas_totales ?? item.ventas ?? 0)
+            const prorrateo = Number(detalle.presupuesto_prorrateado ?? item.prorrateo ?? META_CONEXIONES) || META_CONEXIONES
+            const meta = Number(detalle.presupuesto_prorrateado ?? prorrateo) || prorrateo
+            const cumplimientoRaw = meta ? (ventas / meta) * 100 : detalle.cumple_global ? 100 : 0
+            const cumplimiento = clampPercent(cumplimientoRaw)
+            const novedades = detalle.novedades ?? item.novedades ?? null
+            const contratoFin = detalle.fecha_fin_contrato || null
+
+            let status = "en_progreso"
+            if (contratoFin) status = "fin_contrato"
+            else if (novedades) status = "novedades"
+            else if (cumplimiento < 80) status = "riesgo"
+            else status = "activo"
+
+            return {
+                id: item.id ?? idx,
+                nombre: detalle.asesor_nombre ?? item.name ?? "Asesor",
+                cedula: detalle.documento ?? item.document_id ?? "N/A",
+                telefono: item.phone ?? "",
+                ventas,
+                meta,
+                cumplimiento,
+                status
+            }
+        })
+    }, [advisors, payroll])
+
+    const stats = useMemo(() => {
+        const total = dataset.length
+        const totalVentas = dataset.reduce((acc, a) => acc + Number(a.ventas ?? 0), 0)
+        const totalMeta = dataset.reduce((acc, a) => acc + Number(a.meta ?? META_CONEXIONES), 0)
+        const cumplimiento = totalMeta > 0 ? clampPercent((totalVentas / totalMeta) * 100) : 0
+        return { total, totalVentas, totalMeta, cumplimiento }
+    }, [dataset])
+
+    const handleBack = () => {
+        window.history.back()
+    }
+
+    const handleViewAdvisor = (advisor) => {
+        if (!advisor?.id) return
+        navigate(`/AdvisorDetails/${advisor.id}`, { state: { advisor } })
+    }
+
+    const statusBadge = (status) => {
+        if (status === "activo") return "bg-green-100 text-green-800"
+        if (status === "riesgo") return "bg-yellow-100 text-yellow-800"
+        if (status === "novedades") return "bg-blue-100 text-blue-800"
+        if (status === "fin_contrato") return "bg-orange-100 text-orange-800"
+        return "bg-gray-100 text-gray-800"
+    }
+
+    return (
+        <div className="flex min-h-screen bg-gray-50 font-sans text-slate-800">
+            <nav className="sticky top-0 hidden h-screen w-[14%] flex-shrink-0 flex-col justify-end bg-red-700 text-white shadow-lg lg:flex">
+                <div className="fixed top-16 bottom-40 mt-4 flex w-[14%] flex-col justify-around overflow-y-auto pr-2">
+                    <div className="p-6 text-center">
+                        <h1 className="text-2xl font-bold">Panel Coordinador</h1>
+                    </div>
+                    <ol>
+                        <li>
+                            <button className="flex w-full items-center space-x-3 px-6 py-3 text-left hover:bg-red-800">
+                                <Icon path="M3 12h18M3 6h18M3 18h18" className="h-6 w-6" />
+                                <span>Dashboard</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button className="flex w-full items-center space-x-3 px-6 py-3 text-left hover:bg-red-800">
+                                <Icon path="M12 3v18m9-9H3" className="h-6 w-6" />
+                                <span>Metas</span>
+                            </button>
+                        </li>
+                    </ol>
+                </div>
+                <div className="border-t border-red-800 p-6">
+                    <button className="flex w-full items-center space-x-3 text-red-100 hover:text-white">
+                        <Icon path="M17 16l4-4m0 0-4-4m4 4H3" className="h-6 w-6" />
+                        <span>Cerrar Sesion</span>
+                    </button>
+                </div>
+            </nav>
+
+            <main className="flex-1 pb-16 pl-0 pr-0 sm:px-6 md:p-8 lg:pl-12">
+                <div className="mb-4 flex items-center text-sm text-gray-600">
+                    <button onClick={handleBack} className="flex items-center font-medium text-gray-600 hover:text-red-600">
+                        <Icon path="M10 19 3 12l7-7m-7 7h18" className="mr-1 h-4 w-4" />
+                        Volver
+                    </button>
+                </div>
+
+                <div className="mb-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+                        <div className="flex items-center gap-5">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-2xl font-bold text-gray-500 shadow-md">
+                                {initials(coordinatorMeta.name || "CO")}
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900">{coordinatorMeta.name ?? "Coordinador"}</h1>
+                                <div className="mt-1 flex items-center gap-2 text-gray-500">
+                                    <Icon path="M12 2v20M2 12h20" className="h-4 w-4" />
+                                    <span className="font-medium">{coordinatorMeta.unit_type || "COORDINACION"}</span>
+                                    <span className="mx-1">|</span>
+                                    <Icon path="M12 20.5 20 9a8 8 0 1 0-16 0l8 11.5Z" className="h-4 w-4" />
+                                    <span>{coordinatorMeta.district || coordinatorMeta.name}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex w-full gap-4 md:w-auto">
+                            <div className="flex-1 rounded-lg border border-red-100 bg-red-50 px-5 py-3 text-center md:flex-none">
+                                <p className="text-xs font-bold uppercase tracking-wider text-red-600">Cumplimiento</p>
+                                <p className="text-2xl font-extrabold text-red-700">{stats.cumplimiento}%</p>
+                            </div>
+                            <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-5 py-3 text-center md:flex-none">
+                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Asesores</p>
+                                <p className="text-2xl font-extrabold text-gray-800">{stats.total}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6">
+                        <div className="mb-2 flex justify-between text-sm">
+                            <span className="font-medium text-gray-700">Ventas (Ejecutado) vs Meta</span>
+                            <span className="text-gray-500">
+                                {stats.totalVentas} / {stats.totalMeta}
+                            </span>
+                        </div>
+                        <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
+                            <div
+                                className="h-full rounded-full bg-red-600 transition-all duration-500"
+                                style={{ width: `${Math.min(stats.cumplimiento, 100)}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <section className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+                    <div className="flex flex-col items-center justify-between gap-4 border-b border-gray-100 p-6 sm:flex-row">
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-900">Equipo de Asesores</h2>
+                            <p className="text-sm text-gray-500">
+                                Seguimiento del equipo. Periodo: <span className="font-medium text-gray-800">{REPORT_PERIOD}</span>
+                            </p>
+                        </div>
+                        {(advisorsLoading || payrollLoading) && <p className="text-xs text-gray-500">Actualizando datos...</p>}
+                        {(advisorsError || payrollError) && (
+                            <p className="text-xs text-red-600">No fue posible cargar datos: {advisorsError || payrollError}</p>
+                        )}
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-left">
+                            <thead>
+                                <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                    <th className="px-6 py-4">Asesor</th>
+                                    <th className="px-6 py-4 text-center">Ventas / Meta</th>
+                                    <th className="px-6 py-4 text-center">Cumplimiento</th>
+                                    <th className="px-6 py-4">Estado</th>
+                                    <th className="px-6 py-4 text-right">Accion</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {dataset.map((advisor) => (
+                                    <tr
+                                        key={advisor.id}
+                                        className="cursor-pointer transition-colors duration-150 hover:bg-red-50"
+                                        onClick={() => handleViewAdvisor(advisor)}
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-600">
+                                                    {initials(advisor.nombre)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">{advisor.nombre}</p>
+                                                    <p className="text-xs text-gray-500">{advisor.cedula}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="font-bold text-gray-800">{advisor.ventas}</span>
+                                            <span className="mx-1 text-gray-400">/</span>
+                                            <span className="text-gray-500">{advisor.meta}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`rounded-md border px-3 py-1 text-xs font-bold ${statusBadge(advisor.status)}`}>
+                                                {advisor.cumplimiento}%
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge(advisor.status)}`}>
+                                                {advisor.status === "activo"
+                                                    ? "Activo"
+                                                    : advisor.status === "riesgo"
+                                                        ? "Riesgo"
+                                                        : advisor.status === "novedades"
+                                                            ? "Novedades"
+                                                            : "Fin contrato"}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button className="text-gray-400 hover:text-red-600" aria-label="Ver asesor">
+                                                <Icon path="m9 18 6-6-6-6" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {dataset.length === 0 && !advisorsLoading && (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-6 text-center text-sm text-gray-500">
+                                            No hay asesores para este coordinador.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="border-t border-gray-100 bg-gray-50 p-4 text-center text-sm text-gray-500">
+                        Total asesores: {dataset.length}
+                    </div>
+                </section>
+            </main>
+        </div>
+    )
+}

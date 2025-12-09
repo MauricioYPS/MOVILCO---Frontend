@@ -8,6 +8,7 @@ import Advisors from './Pages/Advisor'
 import MessageHistory from './Pages/MessageHistory'
 import AdvisorDeails from './Pages/AdvisorDetails'
 import Coordinators from './Pages/Coordinators'
+import CoordinatorDetails from './Pages/CoordinatorDetails'
 
 const router = createBrowserRouter([
   {
@@ -17,8 +18,9 @@ const router = createBrowserRouter([
       { path: "/home", element: <Home></Home> },
       { path: "/Advisors", element: <Advisors></Advisors> },
       { path: "/MessageHistory", element: <MessageHistory></MessageHistory>},
-      { path: "/AdvisorDetails", element: <AdvisorDeails></AdvisorDeails>},
-      { path: "/Coordinators", element: <Coordinators></Coordinators>}
+      { path: "/AdvisorDetails/:id", element: <AdvisorDeails></AdvisorDeails>},
+      { path: "/Coordinators", element: <Coordinators></Coordinators>},
+      { path: "/CoordinatorDetails/:id", element: <CoordinatorDetails></CoordinatorDetails>}
     ],
   },
   { path: "/*", element: <NotFound></NotFound> }

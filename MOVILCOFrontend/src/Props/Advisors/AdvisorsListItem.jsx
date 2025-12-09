@@ -25,9 +25,13 @@ function StatusPing({ show }) {
 
 export default function AdvisorsListItem({ advisor, checked, onToggle, onView, trend = [] }) {
     const initials = getInitials(advisor.nombre)
-    const showPing = advisor.status === "incumplimiento" || advisor.novedades
-    const novedadesCount = advisor.novedades ? 1 : 0
-    const contratoLabel = advisor.contrato_fin || "Sin fecha"
+    const showPing = advisor.status === "incumplimiento" || (advisor.novedades && advisor.novedades.length > 0)
+    const novedadesCount = Array.isArray(advisor.novedades)
+        ? advisor.novedades.length
+        : advisor.novedades
+            ? 1
+            : 0
+    const contratoLabel = advisor.contrato_fin || null
 
     return (
         <li className="group transition-colors hover:bg-gray-50">
@@ -61,10 +65,12 @@ export default function AdvisorsListItem({ advisor, checked, onToggle, onView, t
                             <span className="text-gray-500">Novedades:</span>{" "}
                             <span className="font-medium text-blue-600">{novedadesCount}</span>
                         </div>
-                        <div>
-                            <span className="text-gray-500">Fin Contrato:</span>{" "}
-                            <span className="font-medium text-red-600">{contratoLabel}</span>
-                        </div>
+                        {contratoLabel && (
+                            <div>
+                                <span className="text-gray-500">Fin Contrato:</span>{" "}
+                                <span className="font-medium text-red-600">{contratoLabel}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -107,7 +113,7 @@ export default function AdvisorsListItem({ advisor, checked, onToggle, onView, t
                     </div>
                     <div className="flex w-20 flex-col items-end">
                         <p className={`text-xl font-bold ${performanceColor(advisor.cumplimiento)}`}>
-                            {advisor.cumplimiento ?? 0}%
+                            {Math.round(advisor.cumplimiento) ?? 0}%
                         </p>
                         <button
                             className="mt-1 text-sm font-medium text-red-600 transition hover:text-red-500"

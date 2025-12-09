@@ -2,7 +2,12 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 import axios from "axios"
 import { api } from "../api"
 
-const REPORT_PERIOD = "2025-07"
+const currentPeriod = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    return `${year}-${month}`
+}
 
 const normalizeEntries = (entries) => {
     if (!Array.isArray(entries)) return []
@@ -14,7 +19,8 @@ const normalizeEntries = (entries) => {
             if (entry && typeof entry === "object") {
                 return {
                     id: entry.id ?? entry.user_id ?? entry.asesor_id ?? entry.document ?? entry.documento,
-                    document: entry.document ?? entry.document_id ?? entry.documento ?? entry.cedula
+                    document: entry.document ?? entry.document_id ?? entry.documento ?? entry.cedula,
+                    period: entry.period
                 }
             }
             return null
@@ -30,12 +36,12 @@ export const fetchPayrollDetailsByUsers = createAsyncThunk(
 
         try {
             const responses = await Promise.all(
-                entries.map(({ id, document }) =>
+                entries.map(({ id, document, period }) =>
                     axios
                         .get(`${api}/api/kpi/get`, {
-                            params: { period: REPORT_PERIOD, details: false, documento: document }
+                            params: { period: period || currentPeriod(), details: false, documento: document }
                         })
-                        .then((res) => ({ id, document, data: res.data }))
+                        .then((res) => ({ id, document, period: period || currentPeriod(), data: res.data }))
                 )
             )
             
@@ -80,7 +86,7 @@ const payrollSlice = createSlice({
                         state.detailsById[item.id] = {
                             ...detail,
                             document: item.document,
-                            period: item.data?.period ?? REPORT_PERIOD
+                            period: item.data?.period ?? item.period ?? currentPeriod()
                         }
                     }
                 })

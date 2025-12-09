@@ -1,6 +1,6 @@
 export default function Logo() {
   return (
-    <div className="flex items-center shrink-0">
+    <div className="flex items-center shrink-0 bg-white px-2 py-1 rounded-lg">
       <svg
         className="h-8 w-auto text-[#cc0000]"
         fill="none"

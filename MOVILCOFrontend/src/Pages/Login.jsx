@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { api } from '../../store/api';
 import AuthLayout from './auth/AuthLayout';
+import { persistSession } from '../utils/auth';
 
 const Login = ({ withLayout = true }) => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -16,19 +17,6 @@ const Login = ({ withLayout = true }) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const persistSession = (data) => {
-    if (data?.token) {
-      localStorage.setItem('auth_token', data.token);
-    }
-    if (data?.user) {
-      localStorage.setItem('auth_user', JSON.stringify(data.user));
-    }
-    // opcional: setear header global
-    if (data?.token) {
-      axios.defaults.headers.common.Authorization = `Bearer ${data.token}`;
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -37,9 +25,26 @@ const Login = ({ withLayout = true }) => {
     try {
       const { data } = await axios.post(`${api}/api/auth/login`, formData);
       if (data?.ok) {
-        persistSession(data);
+        persistSession({ token: data.token, user: data.user });
+        const userRole = data.user.role;
+
         setMessage('Sesión iniciada correctamente');
-        navigate('/home');
+        switch (userRole) {
+          case 'ASESORIA':
+            navigate('/AdvisorDashboard');
+            break;
+          case 'COORDINACION':
+            navigate('/Advisors');
+            break;
+          case 'DIRECCION':
+            navigate('/Coordinators');
+            break;
+          case 'GERENCIA':
+            navigate('/RegionalManager');
+            break;
+
+          default:
+        }
       } else {
         setError('Credenciales inválidas');
       }
@@ -82,7 +87,7 @@ const Login = ({ withLayout = true }) => {
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             required
-            placeholder="••••••••"
+            placeholder="********"
             className="block w-full px-3 py-3 pr-10 border border-gray-200 rounded-xl leading-5 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
             value={formData.password}
             onChange={handleChange}

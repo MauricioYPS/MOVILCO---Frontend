@@ -4,6 +4,21 @@ import { api } from "../api"
 
 const DEFAULT_DIRECTION_ID = 99
 
+const getDefaultDirectionId = () => {
+    if (typeof window === "undefined") return DEFAULT_DIRECTION_ID
+    try {
+        const stored = localStorage.getItem("auth_user")
+        if (stored) {
+            const parsed = JSON.parse(stored)
+            // Para Dirección usamos org_unit_id (unidad de dirección) si existe
+            return parsed?.org_unit_id || parsed?.direccion_unit_id || parsed?.id || DEFAULT_DIRECTION_ID
+        }
+    } catch (e) {
+        return DEFAULT_DIRECTION_ID
+    }
+    return DEFAULT_DIRECTION_ID
+}
+
 const formatPeriod = (period) => {
     if (typeof period === "string" && /^\d{4}-\d{2}$/.test(period)) return period
     const now = new Date()
@@ -15,13 +30,13 @@ const formatPeriod = (period) => {
 const normalizePayload = (payload) => {
     if (payload && typeof payload === "object") {
         return {
-            directionId: payload.directionId ?? payload.id ?? DEFAULT_DIRECTION_ID,
+            directionId: payload.directionId ?? payload.org_unit_id ?? payload.id ?? getDefaultDirectionId(),
             period: formatPeriod(payload.period)
         }
     }
 
     return {
-        directionId: payload ?? DEFAULT_DIRECTION_ID,
+        directionId: payload ?? getDefaultDirectionId(),
         period: formatPeriod()
     }
 }
@@ -45,6 +60,7 @@ const normalizeCoordinator = (coordinator, idx) => {
 
     return {
         id: coordinator?.id ?? coordinator?.org_unit_id ?? idx,
+        user_id: coordinator?.user_id ?? null,
         name: coordinator?.name ?? "Coordinacion sin nombre",
         unit_type: coordinator?.unit_type ?? "COORDINACION",
         total_asesores: totalAsesores,
@@ -93,7 +109,7 @@ export const fetchCoordinatorsByDirection = createAsyncThunk(
 
 const initialState = {
     data: [],
-    directionId: DEFAULT_DIRECTION_ID,
+    directionId: getDefaultDirectionId(),
     direction: null,
     period: formatPeriod(),
     total: 0,

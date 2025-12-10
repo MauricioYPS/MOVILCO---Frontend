@@ -77,7 +77,6 @@ const WorkedDaysManager = () => {
         {/* Header */}
         <header className="bg-white border-b border-gray-200 shadow-sm z-10 h-16 flex items-center justify-between px-6 lg:px-10">
            <div className="flex items-center gap-4">
-             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-500"><Menu size={24} /></button>
              <div>
                 <h1 className="text-lg font-bold text-slate-800">Gestión de Novedades</h1>
                 <p className="text-xs text-gray-400">Periodo Activo: <span className="font-bold text-red-600">Diciembre 2025</span></p>
@@ -88,7 +87,6 @@ const WorkedDaysManager = () => {
                 {filteredEmployees.length} Registros
              </div>
              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 shadow-sm transition-all active:scale-95 disabled:opacity-70 disabled:cursor-wait">
-                {isSaving ? 'Guardando...' : <><Save size={16}/> Guardar Cambios</>}
              </button>
            </div>
         </header>

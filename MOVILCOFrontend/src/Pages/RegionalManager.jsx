@@ -412,7 +412,7 @@ export default function RegionalManager() {
     const [periodDirections] = useState("2025-08")
     const [periodNovedades] = useState(currentPeriod())
     const navigate = useNavigate()
-        const handleViewCoordinator = (coordId) => {
+    const handleViewCoordinator = (coordId) => {
         if (!coordId) return
         navigate(`/CoordinatorDetails/${coordId}`, {
             state: {
@@ -523,12 +523,19 @@ export default function RegionalManager() {
                 <Header onMenu={() => setSidebarOpen(true)} currentDay={currentDay} totalDays={totalDays} progressPct={progressTimePct} />
 
                 <main className="flex-1 overflow-y-auto bg-slate-50 p-4 lg:p-8">
-                    <button onClick={goDB}
-                                    className="flex w-full items-center justify-center gap-2 rounded-md bg-green-300 px-4 py-2 text-sm font-semibold text-black shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 sm:w-auto mb-4"
-                                >
-                                    Actualizar DB
-                                </button> 
+                    <div className="flex items-end justify-end ">
+                        <button className="flex w-full items-center justify-center gap-2 rounded-md bg-orange-300 px-4 py-2 text-sm font-semibold text-black shadow-sm transition hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 sm:w-auto mb-4 mr-10 " onClick={() => window.location.href = '/SendMails'}>
+                            Enviar Correos
+                        </button>
+                        <button onClick={goDB}
+                            className="flex w-full items-center justify-center gap-2 rounded-md bg-green-300 px-4 py-2 text-sm font-semibold text-black shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 sm:w-auto mb-4 "
+                        >
+                            Actualizar DB
+                        </button>
+                    </div>
+
                     <div className="mx-auto max-w-[1400px] space-y-6">
+
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                             <KpiCard
                                 title="Venta Total Acumulada"
@@ -540,7 +547,7 @@ export default function RegionalManager() {
                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600" />
                                 <div className="flex items-center justify-between pl-2">
                                     <div>
-                                                                        
+
                                         <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
                                             Control Prorrateo <span className="font-extrabold text-red-600">(Día {currentDay})</span>
                                         </p>

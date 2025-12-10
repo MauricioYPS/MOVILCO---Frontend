@@ -1,8 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { api } from "../../../store/api";
 import { useNavigate } from "react-router-dom";
-import { clearSession, getStoredToken, getStoredUser, isTokenExpired, persistAuthHeader } from "../../utils/auth";
+import { useDispatch } from "react-redux";
+import { clearSession, isTokenExpired, persistAuthHeader } from "../../utils/auth";
+import useAuthSession from "../../hooks/useAuthSession";
+import { clearAdvisors } from "../../../store/reducers/advisorsReducers";
+import { clearCoordAdvisors } from "../../../store/reducers/coordAdvisorsReducers";
+
 const iconPath = {
   mail: "M4 4h16v16H4z M22 6l-10 7L2 6",
   phone: "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.62-3.92A19.5 19.5 0 013.08 9.2 19.79 19.79 0 010 0.19 2 2 0 012.11 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6 7s1.5 4 5 7 7 5 7 5l1.36-1.36a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92Z",
@@ -12,16 +17,6 @@ const iconPath = {
   building: "M3 21h18M6 21V5h12v16M9 9h6M9 13h6M9 17h6",
   logout: "M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9",
 };
-async function handleLogout() {
-  await axios.post(`${api}/api/auth/logout`, {}, { withCredentials: true });
-
-  // Eliminar token JWT almacenado
-  localStorage.removeItem("token");
-  sessionStorage.removeItem("token");
-
-  navigate("/login");
-}
-
 
 const Icon = ({ name, size = 18, className = "" }) => (
   <svg
@@ -66,15 +61,25 @@ export default function SideBar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-
-  const storedUser = useMemo(() => getStoredUser(), []);
-  const userId = storedUser?.id;
+  const dispatch = useDispatch();
+  const { user, token } = useAuthSession();
+  const userId = user?.id;
 
   useEffect(() => {
-    const token = getStoredToken();
-    if (token && !isTokenExpired(token)) {
-      persistAuthHeader(token);
+    if (!token) {
+      setLoading(false);
+      setError("Sin sesión activa");
+      return;
     }
+    if (isTokenExpired(token)) {
+      clearSession();
+      setLoading(false);
+      setError("Sesión expirada");
+      return;
+    }
+
+    persistAuthHeader(token);
+
     const fetchProfile = async () => {
       if (!userId) {
         setLoading(false);
@@ -94,12 +99,15 @@ export default function SideBar() {
       }
     };
     fetchProfile();
-  }, [userId]);
+  }, [token, userId]);
 
   const asesor = profile?.asesor || {};
   const coord = profile?.coordinador || {};
+const stored = localStorage.getItem("auth_user");
+const parsed = stored ? JSON.parse(stored) : {};
 
-  const userInfo = {
+const org_unit_id = parsed?.org_unit_id || "";
+const userInfo = {
     name: asesor.name || "Usuario Movilco",
     email: asesor.email || "usuario@movilco.com",
     phone: asesor.phone || "000 000 0000",
@@ -107,6 +115,8 @@ export default function SideBar() {
     regional: asesor.regional || "Regional N/D",
     budget: asesor.presupuesto ? `${asesor.presupuesto}` : "Presupuesto N/D",
   };
+  console.log(org_unit_id);
+  
 
   const bossInfo = {
     name: coord.name || "Jefe no asignado",
@@ -122,8 +132,8 @@ export default function SideBar() {
       console.error("Logout error", err?.response?.data || err?.message);
     } finally {
       clearSession();
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
+      dispatch(clearAdvisors());
+      dispatch(clearCoordAdvisors());
       navigate("/SignIn");
     }
   };
@@ -133,7 +143,7 @@ export default function SideBar() {
       className="hidden lg:flex flex-col red-movilco text-white h-screen sticky top-0 border-r border-red-800/60 shadow-lg z-40 font-sans overflow-hidden"
       style={{ width: "320px", minWidth: "320px" }}
     >
-      <div className="flex-1 flex flex-col p-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col p-8 ">
         <div className="flex flex-col items-center text-center mb-8">
           <div className="relative mb-4">
             <div className="w-24 h-24 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-3xl shadow-inner border border-white/30">

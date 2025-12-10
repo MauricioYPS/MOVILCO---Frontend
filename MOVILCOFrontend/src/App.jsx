@@ -15,13 +15,16 @@ import DataWorkflow from './Pages/DataWorkflow'
 import AuthPage from './Pages/SignIn'
 import ProtectedLayout from './Layouts/ProtectedLayout'
 import AdvisorDashboard from './Pages/AdvisorDashboard'
+import EmailSenderPage from './Pages/SendMails'
 
+
+
+  
 const router = createBrowserRouter([
   {
     element: <ProtectedLayout></ProtectedLayout>,
     children: [
-      { path: "/", element: <Advisors></Advisors> },
-      { path: "/home", element:<Advisors></Advisors>  },
+      { path: "/Home", element: <Home></Home> },
       { path: "/Advisors", element: <Advisors></Advisors> },
       { path: "/MessageHistory", element: <MessageHistory></MessageHistory>},
       { path: "/AdvisorDetails/:id", element: <AdvisorDeails></AdvisorDeails>},
@@ -30,16 +33,17 @@ const router = createBrowserRouter([
       { path: "/RegionalManager", element: <RegionalManagerDashboard></RegionalManagerDashboard>},
       { path: "/MessagingHub", element: <MessagingHub></MessagingHub>},
       { path: "/DataWorkflow", element: <DataWorkflow></DataWorkflow>},
-      { path: "/AdvisorDashboard", element: <AdvisorDashboard></AdvisorDashboard>}
+      { path: "/AdvisorDashboard", element: <AdvisorDashboard></AdvisorDashboard>},
+      { path: "/SendMails", element: <EmailSenderPage></EmailSenderPage> }
     ],
   },
-  { path: "/SignIn", element: <AuthPage></AuthPage>},
-  { path: "/*", element: <NotFound></NotFound> },
+  { path: "/SignIn", element: <AuthPage></AuthPage> },
+  { path: "/*", element: <Home></Home> },
 ])
 function App() {
 
   return (
-    <>
+    <>  
       <RouterProvider router={router}></RouterProvider>
     </>
   )

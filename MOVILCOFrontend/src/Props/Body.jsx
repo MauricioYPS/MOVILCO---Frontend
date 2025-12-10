@@ -1,6 +1,6 @@
 import StatCard from "./StatCard";
 
-export default function Body() {
+export default function   Body() {
   return (
     <>
     <div className="w-full flex justify-center">

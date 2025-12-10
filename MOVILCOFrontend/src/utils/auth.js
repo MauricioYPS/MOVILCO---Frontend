@@ -1,5 +1,6 @@
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
+const AUTH_EVENT = "auth-changed";
 
 const decodePayload = (token) => {
   try {
@@ -28,16 +29,42 @@ export const isTokenExpired = (token) => {
   return exp < now;
 };
 
+const broadcastAuthChange = () => {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_EVENT));
+  }
+};
+
 export const clearSession = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem("token");
+  sessionStorage.removeItem("token");
   delete window?.axios?.defaults?.headers?.common?.Authorization;
+  broadcastAuthChange();
 };
 
 export const persistAuthHeader = (token) => {
   if (token && window?.axios) {
     window.axios.defaults.headers.common.Authorization = `Bearer ${token}`;
   }
+};
+
+export const persistSession = ({ token, user }) => {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+    persistAuthHeader(token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+
+  if (user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_KEY);
+  }
+
+  broadcastAuthChange();
 };
 
 export const hasValidSession = () => {

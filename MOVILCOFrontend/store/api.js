@@ -1,1 +1,1 @@
-export const api = "https://api.movilco.devmauricioy.com/api/users"
+export const api = "https://api.movilco.devmauricioy.com"

@@ -254,8 +254,9 @@ export default function Coordinators() {
     }, [filtered, meta?.total])
 
     const handleViewTeam = (coord) => {
-        if (!coord?.id) return
-        navigate(`/CoordinatorDetails/${coord.id}`, { state: { coordinator: coord, period: meta?.period } })
+        const targetId = coord?.user_id || coord?.id
+        if (!targetId) return
+        navigate(`/CoordinatorDetails/${targetId}`, { state: { coordinator: coord, period: meta?.period } })
     }
 
     return (

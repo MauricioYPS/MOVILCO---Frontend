@@ -16,12 +16,6 @@ const Register = ({ withLayout = true }) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const persistSession = (data) => {
-    if (data?.token) localStorage.setItem('auth_token', data.token);
-    if (data?.user) localStorage.setItem('auth_user', JSON.stringify(data.user));
-    if (data?.token) axios.defaults.headers.common.Authorization = `Bearer ${data.token}`;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -30,7 +24,9 @@ const Register = ({ withLayout = true }) => {
     try {
       const { data } = await axios.post(`${api}/api/auth/register`, formData);
       if (data?.ok) {
-        persistSession(data);
+        if (data?.token) localStorage.setItem('auth_token', data.token);
+        if (data?.user) localStorage.setItem('auth_user', JSON.stringify(data.user));
+        if (data?.token) axios.defaults.headers.common.Authorization = `Bearer ${data.token}`;
         setMessage('Registro exitoso');
         navigate('/home');
       } else {
@@ -75,7 +71,7 @@ const Register = ({ withLayout = true }) => {
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
             required
-            placeholder="••••••••"
+            placeholder="********"
             className="block w-full px-3 py-3 pr-10 border border-gray-200 rounded-xl leading-5 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
             value={formData.password}
             onChange={handleChange}

@@ -127,6 +127,8 @@ const coordAdvisorsSlice = createSlice({
             state.total = 0
             state.error = null
             state.lastFetched = null
+            state.coordinatorId = getDefaultCoordinatorId()
+            state.loading = false
         }
     },
     extraReducers: (builder) => {

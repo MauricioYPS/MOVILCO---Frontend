@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import Logo from "./Logo";
 import { NavLink } from "react-router-dom";
-import { getStoredUser } from "../utils/auth";
+import useAuthSession from "../hooks/useAuthSession";
 
 const NAV_ITEMS = [
+  { id: "dashboardAsesores", label: "Dashboard", link: "/AdvisorDashboard" },
   { id: "asesores", label: "Asesores", link: "/Advisors" },
   { id: "coordinadores", label: "Coordinadores", link: "/Coordinators" },
   { id: "gerentes", label: "Gerentes", link: "/RegionalManager" },
@@ -13,22 +14,24 @@ export default function Navbar() {
   const [activeId, setActiveId] = useState("asesores");
   const [selectedNav, setSelectedNav] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { role: sessionRole } = useAuthSession();
 
   const userRole = useMemo(() => {
-    const stored = getStoredUser();
-    const raw = stored?.role || stored?.cargo || localStorage.getItem("role") || "";
-    return raw.toString().trim().toUpperCase();
-  }, []);
+    return sessionRole || "";
+  }, [sessionRole]);
 
   const visibleNavItems = useMemo(() => {
     if (["ASESOR", "ASESORIA", "ASESOR COMERCIAL"].includes(userRole)) {
-      return NAV_ITEMS.filter((item) => item.id === "asesores");
+      return NAV_ITEMS.filter((item) => item.id === "dashboardAsesores");
     }
-    if (["COORDINADOR", "COORDINADOR COMERCIAL"].includes(userRole)) {
-      return NAV_ITEMS.filter((item) => ["asesores", "coordinadores"].includes(item.id));
+    if (["COORDINACION", "COORDINADOR COMERCIAL"].includes(userRole)) {
+      return NAV_ITEMS.filter((item) => ["asesores", ].includes(item.id));
+    }
+    if (["DIRECCION", "DIRECTOR COMERCIAL"].includes(userRole)) {
+      return NAV_ITEMS.filter((item) => [ "coordinadores"].includes(item.id));
     }
     if (["GERENTE", "GERENCIA", "DIRECTOR", "DIRECTOR REGIONAL"].includes(userRole)) {
-      return NAV_ITEMS;
+      return NAV_ITEMS.filter((item) => [ "gerentes"].includes(item.id));
     }
     return NAV_ITEMS;
   }, [userRole]);

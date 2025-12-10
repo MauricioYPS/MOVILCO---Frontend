@@ -63,17 +63,23 @@ export default function CoordinatorDetails() {
     const coordinatorMeta =
         coordMetaSlice?.coordinator ||
         location.state?.coordinator ||
-        (Array.isArray(directionCoordinators) ? directionCoordinators.find((c) => String(c.id) === String(id)) : null) ||
+        (Array.isArray(directionCoordinators)
+            ? directionCoordinators.find(
+                  (c) => String(c.user_id || c.id) === String(id)
+              )
+            : null) ||
         {}
+
+    const coordinatorIdForFetch = coordinatorMeta?.user_id || location.state?.coordinator?.user_id || id
 
     const selectedPeriod = location.state?.period || coordMetaSlice?.period || currentPeriod()
         
 
     useEffect(() => {
-        if (id) {
-            dispatch(fetchCoordAdvisorsByCoordinator({ coordinatorId: id, period: selectedPeriod }))
+        if (coordinatorIdForFetch) {
+            dispatch(fetchCoordAdvisorsByCoordinator({ coordinatorId: coordinatorIdForFetch, period: selectedPeriod }))
         }
-    }, [dispatch, id, selectedPeriod])
+    }, [dispatch, coordinatorIdForFetch, selectedPeriod])
 
     useEffect(() => {
         const entries = Array.isArray(advisors)

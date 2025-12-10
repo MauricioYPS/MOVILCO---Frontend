@@ -15,6 +15,7 @@ import {
 } from "../../store/reducers/advisorsReducers"
 const META_CONEXIONES = 13
 const DIAS_META = 30
+
 const clampPercent = (value) => Math.min(100, Math.max(0, Number(value) || 0))
 const normalizeNovedades = (value) => {
     const list = Array.isArray(value) ? value : value ? [value] : []
@@ -312,7 +313,8 @@ export default function Advisors() {
     }
 
     if (advisorsError && apiAsesores.length === 0) {
-        return <p className="p-6 text-red-600">Error al cargar los asesores: {advisorsError}</p>
+        const readableError = typeof advisorsError === "string" ? advisorsError : "No fue posible cargar asesores."
+        return <p className="p-6 text-red-600">Error al cargar los asesores: {readableError}</p>
     }
 
     const kpiCards = [
@@ -429,12 +431,12 @@ export default function Advisors() {
                                     disabled={advisorsLoading}
                                     className="block w-full rounded-md border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200 disabled:cursor-not-allowed disabled:bg-gray-100 sm:w-40"
                                 >
-                                {periodOptions.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </option>
-                                ))}
-                            </select>
+                                    {periodOptions.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
                                 <button
                                     onClick={() => setIsDrawerOpen(true)}
                                     className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto"
@@ -508,9 +510,7 @@ export default function Advisors() {
                         </ul>
                     </div>
 
-                    <div className="border-t border-gray-200 p-4 sm:p-6">
-
-                    </div>
+                    <div className="border-t border-gray-200 p-4 sm:p-6" />
                 </section>
             </div>
 

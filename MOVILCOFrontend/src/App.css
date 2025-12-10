@@ -6,3 +6,49 @@
 .hover\:red-movilco:hover{
     background-color: rgb(161, 0, 6);
 }
+
+/* Acceso restringido (Advisor) */
+.blob {
+    position: absolute;
+    filter: blur(70px);
+    opacity: 0.5;
+    animation: blobFloat 12s ease-in-out infinite;
+}
+
+.animation-delay-2000 {
+    animation-delay: 2s;
+}
+
+.robot-head {
+    animation: floatHead 6s ease-in-out infinite;
+}
+
+.robot-eye circle {
+    animation: blink 4s ease-in-out infinite;
+}
+
+.robot-arm-left {
+    animation: waveArm 3s ease-in-out infinite;
+}
+
+@keyframes blobFloat {
+    0% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-20px) scale(1.05); }
+    100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes floatHead {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    92% { transform: scaleY(0.1); }
+}
+
+@keyframes waveArm {
+    0%, 100% { transform: rotate(0deg); transform-origin: 160px 110px; }
+    50% { transform: rotate(-10deg); transform-origin: 160px 110px; }
+}

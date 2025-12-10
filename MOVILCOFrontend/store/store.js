@@ -5,6 +5,9 @@ import advisorsReducer from "./reducers/advisorsReducers";
 import payrollReducer from "./reducers/payrollReducers";
 import directionsReducer from "./reducers/directionsReducers";
 import coordAdvisorsReducer from "./reducers/coordAdvisorsReducers";
+import advisorSalesReducer from "./reducers/advisorSalesSlice";
+import advisorInfoReducer from "./reducers/advisorInfoSlice";
+import advisorCiapReducer from "./reducers/advisorCiapSlice";
 
 
 const store = configureStore({
@@ -15,6 +18,9 @@ const store = configureStore({
     payroll: payrollReducer,
     direction: directionsReducer,
     coordAdvisors: coordAdvisorsReducer,
+    advisorSales: advisorSalesReducer,
+    advisorInfo: advisorInfoReducer,
+    advisorCiap: advisorCiapReducer,
   },
 });
 

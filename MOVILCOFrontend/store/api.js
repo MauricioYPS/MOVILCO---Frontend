@@ -1,1 +1,1 @@
-export const api = "https://api.movilco.devmauricioy.com"
+export const api = "http://localhost:3002";

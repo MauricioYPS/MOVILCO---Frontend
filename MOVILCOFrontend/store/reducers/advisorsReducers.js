@@ -3,6 +3,17 @@ import axios from "axios"
 import  {api}  from "../api"
 const DEFAULT_COORDINATOR_ID = 26
 
+const normalizeErrorMessage = (err) => {
+    if (!err) return "Ocurrió un error desconocido."
+    if (typeof err === "string") return err
+    if (err?.error) return String(err.error)
+    try {
+        return JSON.stringify(err)
+    } catch (e) {
+        return "Ocurrió un error desconocido."
+    }
+}
+
 const getDefaultCoordinatorId = () => {
     if (typeof window === "undefined") return DEFAULT_COORDINATOR_ID
     try {
@@ -89,7 +100,35 @@ export const fetchAdvisorsByCoordinator = createAsyncThunk(
                 total: data?.total ?? advisors.length
             }
         } catch (error) {
-            const message = error?.response?.data ?? "No fue posible obtener los asesores del coordinador."
+            const message = error?.response?.data?.error || error?.response?.data || "No fue posible obtener los asesores del coordinador."
+            return rejectWithValue(message)
+        }
+    }
+)
+
+export const fetchAdvisorsByDirector = createAsyncThunk(
+    "advisors/fetchByDirector",
+    async (payload, { rejectWithValue }) => {
+        const { coordinatorId, period } = normalizePayload(payload)
+        try {
+            const { data } = await axios.get(
+                `${api}/api/users/by-director/${coordinatorId}`,
+                { params: { period: period ?? formatPeriod() } }
+            )
+
+            const directorName = data?.director?.name
+            const advisorsRaw = Array.isArray(data?.usuarios) ? data.usuarios : []
+            const advisors = advisorsRaw.map((advisor, idx) => normalizeAdvisor(advisor, directorName, idx))
+
+            return {
+                coordinatorId,
+                advisors,
+                coordinator: data?.director ?? null,
+                period: data?.periodo ?? period ?? formatPeriod(),
+                total: data?.total_usuarios ?? advisors.length
+            }
+        } catch (error) {
+            const message = error?.response?.data?.error || error?.response?.data || "No fue posible obtener los asesores de la dirección."
             return rejectWithValue(message)
         }
     }
@@ -125,6 +164,8 @@ const advisorsSlice = createSlice({
             state.error = null
             state.lastFetched = null
             state.total = 0
+            state.coordinatorId = getDefaultCoordinatorId()
+            state.loading = false
         }
     },
     extraReducers: (builder) => {
@@ -143,7 +184,23 @@ const advisorsSlice = createSlice({
             })
             .addCase(fetchAdvisorsByCoordinator.rejected, (state, action) => {
                 state.loading = false
-                state.error = action.payload ?? "Ocurrio un error desconocido al consultar asesores."
+                state.error = normalizeErrorMessage(action.payload)
+            })
+            .addCase(fetchAdvisorsByDirector.pending, (state) => {
+                state.loading = true
+                state.error = null
+            })
+            .addCase(fetchAdvisorsByDirector.fulfilled, (state, action) => {
+                state.loading = false
+                state.advisors = action.payload?.advisors ?? []
+                state.coordinator = action.payload?.coordinator ?? null
+                state.period = action.payload?.period ?? formatPeriod()
+                state.total = action.payload?.total ?? state.advisors.length
+                state.lastFetched = Date.now()
+            })
+            .addCase(fetchAdvisorsByDirector.rejected, (state, action) => {
+                state.loading = false
+                state.error = normalizeErrorMessage(action.payload)
             })
     }
 })

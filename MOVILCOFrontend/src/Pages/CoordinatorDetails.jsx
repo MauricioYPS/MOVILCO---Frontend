@@ -102,7 +102,7 @@ export default function CoordinatorDetails() {
             const prorrateo = Number(detalle.presupuesto_prorrateado ?? item.prorrateo ?? META_CONEXIONES) || META_CONEXIONES
             const meta = Number(detalle.presupuesto_prorrateado ?? prorrateo) || prorrateo
             const cumplimientoRaw = meta ? (ventas / meta) * 100 : detalle.cumple_global ? 100 : 0
-            const cumplimiento = clampPercent(cumplimientoRaw)
+            const cumplimiento = clampPercent(Math.round(cumplimientoRaw * 100) / 100 ||  cumplimientoRaw)
             const novedades = detalle.novedades ?? item.novedades ?? null
             const contratoFin = detalle.fecha_fin_contrato || null
 
@@ -138,6 +138,8 @@ export default function CoordinatorDetails() {
     }
 
     const handleViewAdvisor = (advisor) => {
+        console.log("Advisor :", advisor);
+        
         if (!advisor?.id) return
         navigate(`/AdvisorDetails/${advisor.id}`, { state: { advisor } })
     }
@@ -206,7 +208,7 @@ export default function CoordinatorDetails() {
                         <div className="flex w-full gap-4 md:w-auto">
                             <div className="flex-1 rounded-lg border border-red-100 bg-red-50 px-5 py-3 text-center md:flex-none">
                                 <p className="text-xs font-bold uppercase tracking-wider text-red-600">Cumplimiento</p>
-                                <p className="text-2xl font-extrabold text-red-700">{stats.cumplimiento}%</p>
+                                <p className="text-2xl font-extrabold text-red-700">{Math.trunc(stats.cumplimiento)}%</p>
                             </div>
                             <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-5 py-3 text-center md:flex-none">
                                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Asesores</p>

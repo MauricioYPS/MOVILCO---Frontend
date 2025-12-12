@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
 const AUTH_EVENT = "auth-changed";
@@ -40,14 +42,15 @@ export const clearSession = () => {
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem("token");
   sessionStorage.removeItem("token");
+  delete axios.defaults.headers.common.Authorization;
   delete window?.axios?.defaults?.headers?.common?.Authorization;
   broadcastAuthChange();
 };
 
 export const persistAuthHeader = (token) => {
-  if (token && window?.axios) {
-    window.axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-  }
+  if (!token) return;
+  axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+  if (window?.axios) window.axios.defaults.headers.common.Authorization = `Bearer ${token}`;
 };
 
 export const persistSession = ({ token, user }) => {

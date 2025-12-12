@@ -26,15 +26,25 @@ const initialState = {
   lastFetched: null
 }
 
-export const registerSale = createAsyncThunk("advisorSales/registerSale", async (payload, { rejectWithValue }) => {
-  try {
-    const { data } = await axios.post(`${api}/api/workflow/advisor/sales/raw`, payload)
-    return data
-  } catch (err) {
-    const message = err?.response?.data?.error || err?.message || "No fue posible registrar la venta."
-    return rejectWithValue(message)
+export const registerSale = createAsyncThunk(
+  "advisorSales/registerSale",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.post(
+        `${api}/api/advisor/sales/raw`,
+        payload
+      )
+      return data
+    } catch (err) {
+      const message =
+        err?.response?.data?.error ||
+        err?.message ||
+        "No fue posible registrar la venta."
+      return rejectWithValue(message)
+    }
   }
-})
+)
+
 
 export const loadPendingSales = createAsyncThunk("advisorSales/loadPendingSales", async (coordinatorId, { rejectWithValue }) => {
   try {

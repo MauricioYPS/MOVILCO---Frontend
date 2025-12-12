@@ -7,8 +7,11 @@ import {
     selectDirectionError,
     selectDirectionLoading,
     selectDirectionMeta,
+    setDirectionContext,
     setDirectionPeriod
 } from "../../store/reducers/directionsReducers"
+import { getStoredUser } from "../utils/auth"
+import SiappBackupsButton from "../Props/SiappBackupsButton"
 
 const IconBase = ({ size = 20, className = "", children }) => (
     <svg
@@ -204,12 +207,28 @@ export default function Coordinators() {
     const error = useSelector(selectDirectionError)
 
     useEffect(() => {
-        if (!meta?.directionId) return
+        const stored = getStoredUser()
+        const storedId = stored?.org_unit_id || stored?.direccion_unit_id || stored?.id
+        if (storedId && storedId !== meta?.directionId) {
+            dispatch(setDirectionContext({ directionId: storedId }))
+        }
+    }, [dispatch, meta?.directionId])
+
+    useEffect(() => {
+        const stored = getStoredUser()
+        const desiredId = stored?.org_unit_id || stored?.direccion_unit_id || stored?.id || meta?.directionId
+        if (!desiredId) return
+
+        if (desiredId !== meta?.directionId) {
+            dispatch(setDirectionContext({ directionId: desiredId }))
+            return
+        }
+
         const comboChanged =
-            meta.directionId !== lastFetchRef.current.id || meta?.period !== lastFetchRef.current.period
+            desiredId !== lastFetchRef.current.id || meta?.period !== lastFetchRef.current.period
         if (!comboChanged || loading) return
-        lastFetchRef.current = { id: meta.directionId, period: meta?.period }
-        dispatch(fetchCoordinatorsByDirection({ directionId: meta.directionId, period: meta?.period }))
+        lastFetchRef.current = { id: desiredId, period: meta?.period }
+        dispatch(fetchCoordinatorsByDirection({ directionId: desiredId, period: meta?.period }))
     }, [dispatch, meta?.directionId, meta?.period, loading])
 
     const periodOptions = useMemo(() => {
@@ -254,7 +273,9 @@ export default function Coordinators() {
     }, [filtered, meta?.total])
 
     const handleViewTeam = (coord) => {
-        const targetId = coord?.user_id || coord?.id
+        const targetId = coord?.id || coord?.id
+        console.log("Tarjet ID:", targetId);
+        
         if (!targetId) return
         navigate(`/CoordinatorDetails/${targetId}`, { state: { coordinator: coord, period: meta?.period } })
     }
@@ -278,6 +299,16 @@ export default function Coordinators() {
 
                             <div className="flex gap-4">
                                 <div className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-2 shadow-sm">
+                                    <div className="rounded-md bg-green-50 p-2 text-green-600">
+                                        <Users size={16} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">Total Coordinadores</p>
+                                        <p className="text-lg font-bold text-gray-800">{stats.totalCoordinators}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-2 shadow-sm">
                                     <div className="rounded-md bg-blue-50 p-2 text-blue-600">
                                         <Briefcase size={16} />
                                     </div>
@@ -293,6 +324,11 @@ export default function Coordinators() {
                                     <div>
                                         <p className="text-xs text-gray-500">Fuerza Ventas</p>
                                         <p className="text-lg font-bold text-gray-800">{stats.totalAdvisors}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 rounded-lg ">
+                                    <div>
+                                        <SiappBackupsButton />
                                     </div>
                                 </div>
                             </div>

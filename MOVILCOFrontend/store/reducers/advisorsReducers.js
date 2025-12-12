@@ -20,6 +20,7 @@ const getDefaultCoordinatorId = () => {
         const stored = localStorage.getItem("auth_user")
         if (stored) {
             const parsed = JSON.parse(stored)
+            
             return parsed?.coordinator_id || parsed?.id || DEFAULT_COORDINATOR_ID
         }
     } catch (e) {

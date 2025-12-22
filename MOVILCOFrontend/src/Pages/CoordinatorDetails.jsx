@@ -156,69 +156,64 @@ export default function CoordinatorDetails() {
         <div className="flex min-h-screen bg-gray-50 font-sans text-slate-800">
 
 
-            <main className="flex-1 pb-16 pl-0 pr-0 sm:px-6 md:p-8 lg:pl-12">
-                <div className="mb-4 flex items-center text-sm text-gray-600">
+            <main className="flex-1 pb-16 pl-0 pr-0 sm:px-4 md:px-8 lg:pl-12">
+                <div className="mb-4 flex items-center text-sm text-gray-600 px-4 sm:px-0">
                     <button onClick={handleBack} className="flex items-center font-medium text-gray-600 hover:text-red-600">
                         <Icon path="M10 19 3 12l7-7m-7 7h18" className="mr-1 h-4 w-4" />
                         Volver
                     </button>
                 </div>
 
-                <div className="mb-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="mx-4 mb-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm sm:mx-0">
                     <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-                        <div className="flex items-center gap-5">
-                            <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-2xl font-bold text-gray-500 shadow-md">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-xl font-bold text-gray-500 shadow-md sm:h-20 sm:w-20 sm:text-2xl">
                                 {initials(coordinatorMeta.name || "CO")}
                             </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">{coordinatorMeta.name ?? "Coordinador"}</h1>
-                                <div className="mt-1 flex flex-wrap items-center gap-2 text-gray-500">
-                                    <span className="flex items-center gap-1">
-                                        <Icon path="M12 2v20M2 12h20" className="h-4 w-4" />
+                            <div className="w-full">
+                                <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{coordinatorMeta.name ?? "Coordinador"}</h1>
+                                <div className="mt-2 grid w-full gap-2 text-sm text-gray-600 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+                                    <span className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+                                        <Icon path="M12 2v20M2 12h20" className="h-4 w-4 text-red-600" />
                                         <span className="font-medium">{coordinatorMeta.unit_type || "COORDINACION"}</span>
                                     </span>
-                                    <span className="mx-1">|</span>
-                                    <span className="flex items-center gap-1">
-                                        <Icon path="M12 20.5 20 9a8 8 0 1 0-16 0l8 11.5Z" className="h-4 w-4" />
-                                        <span>{coordinatorMeta.district || coordinatorMeta.district_claro || coordinatorMeta.name}</span>
+                                    <span className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+                                        <Icon path="M12 20.5 20 9a8 8 0 1 0-16 0l8 11.5Z" className="h-4 w-4 text-slate-600" />
+                                        <span className="truncate">{coordinatorMeta.district || coordinatorMeta.district_claro || coordinatorMeta.name}</span>
                                     </span>
-                                    <span className="mx-1">|</span>
-                                    <span className="flex items-center gap-1">
-                                        <Icon path="M4 4h16v16H4z" className="h-4 w-4" />
+                                    <span className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+                                        <Icon path="M4 4h16v16H4z" className="h-4 w-4 text-slate-600" />
                                         <span>{coordinatorMeta.document_id || "N/A"}</span>
                                     </span>
-                                    <span className="mx-1">|</span>
-                                    <span className="flex items-center gap-1">
-                                        <Icon path="M22 2 11 13" className="h-4 w-4" />
-                                        <span>{coordinatorMeta.phone || "N/A"}</span>
+                                    <span className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+                                        <Icon path="M22 2 11 13" className="h-4 w-4 text-slate-600" />
+                                        <span className="truncate">{coordinatorMeta.phone || "N/A"}</span>
                                     </span>
-                                    <span className="mx-1">|</span>
-                                    <span className="flex items-center gap-1">
-                                        <Icon path="M4 4h16v16H4z" className="h-4 w-4" />
-                                        <span>{coordinatorMeta.email || "N/A"}</span>
+                                    <span className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+                                        <Icon path="M4 4h16v16H4z" className="h-4 w-4 text-slate-600" />
+                                        <span className="truncate">{coordinatorMeta.email || "N/A"}</span>
                                     </span>
-                                    <span className="mx-1">|</span>
-                                    <span className={`flex items-center gap-1 ${coordinatorMeta.active ? "text-green-600" : "text-red-600"}`}>
+                                    <span className={`flex items-center gap-2 rounded-lg px-3 py-2 ${coordinatorMeta.active ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
                                         <Icon path="M5 13l4 4L19 7" className="h-4 w-4" />
-                                        <span>{coordinatorMeta.active ? "Activo" : "Inactivo"}</span>
+                                        <span className="font-semibold">{coordinatorMeta.active ? "Activo" : "Inactivo"}</span>
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex w-full gap-4 md:w-auto">
-                            <div className="flex-1 rounded-lg border border-red-100 bg-red-50 px-5 py-3 text-center md:flex-none">
+                        <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-4 md:w-auto">
+                            <div className="flex-1 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-center md:flex-none">
                                 <p className="text-xs font-bold uppercase tracking-wider text-red-600">Cumplimiento</p>
-                                <p className="text-2xl font-extrabold text-red-700">{Math.trunc(stats.cumplimiento)}%</p>
+                                <p className="text-xl font-extrabold text-red-700 sm:text-2xl">{Math.trunc(stats.cumplimiento)}%</p>
                             </div>
-                            <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-5 py-3 text-center md:flex-none">
+                            <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center md:flex-none">
                                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Asesores</p>
-                                <p className="text-2xl font-extrabold text-gray-800">{stats.total}</p>
+                                <p className="text-xl font-extrabold text-gray-800 sm:text-2xl">{stats.total}</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="mt-6">
-                        <div className="mb-2 flex justify-between text-sm">
+                        <div className="mb-2 flex flex-col justify-between gap-1 text-sm sm:flex-row sm:items-center">
                             <span className="font-medium text-gray-700">Ventas (Ejecutado) vs Meta</span>
                             <span className="text-gray-500">
                                 {stats.totalVentas} / {stats.totalMeta}
@@ -233,9 +228,9 @@ export default function CoordinatorDetails() {
                     </div>
                 </div>
 
-                <section className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                    <div className="flex flex-col items-center justify-between gap-4 border-b border-gray-100 p-6 sm:flex-row">
-                        <div>
+                <section className="mx-4 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm sm:mx-0">
+                    <div className="flex flex-col items-start justify-between gap-3 border-b border-gray-100 p-5 sm:flex-row sm:items-center sm:p-6">
+                        <div className="w-full">
                             <h2 className="text-lg font-bold text-gray-900">Equipo de Asesores</h2>
                             <p className="text-sm text-gray-500">
                                 Seguimiento del equipo. Periodo: <span className="font-medium text-gray-800">{selectedPeriod}</span>
@@ -247,7 +242,7 @@ export default function CoordinatorDetails() {
                         )}
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="hidden overflow-x-auto md:block">
                         <table className="w-full border-collapse text-left">
                             <thead>
                                 <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -314,6 +309,55 @@ export default function CoordinatorDetails() {
                             </tbody>
                         </table>
                     </div>
+
+                    <div className="grid gap-3 p-4 md:hidden">
+                        {dataset.map((advisor) => (
+                            <div
+                                key={advisor.id}
+                                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                                onClick={() => handleViewAdvisor(advisor)}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600">
+                                            {initials(advisor.nombre)}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-900">{advisor.nombre}</p>
+                                            <p className="text-xs text-gray-500">{advisor.cedula}</p>
+                                        </div>
+                                    </div>
+                                    <button className="text-gray-400 hover:text-red-600" aria-label="Ver asesor">
+                                        <Icon path="m9 18 6-6-6-6" />
+                                    </button>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                    <span className="rounded bg-gray-50 px-2 py-1 font-semibold text-slate-800">
+                                        Ventas {advisor.ventas}
+                                    </span>
+                                    <span className="rounded bg-gray-50 px-2 py-1">Meta {advisor.meta}</span>
+                                    <span className={`rounded bg-gray-50 px-2 py-1 text-center font-bold ${statusBadge(advisor.status)}`}>
+                                        {advisor.cumplimiento}% cump.
+                                    </span>
+                                    <span className={`rounded bg-gray-50 px-2 py-1 font-semibold ${statusBadge(advisor.status)}`}>
+                                        {advisor.status === "activo"
+                                            ? "Activo"
+                                            : advisor.status === "riesgo"
+                                                ? "Riesgo"
+                                                : advisor.status === "novedades"
+                                                    ? "Novedades"
+                                                    : "Fin contrato"}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                        {dataset.length === 0 && !advisorsLoading && (
+                            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500">
+                                No hay asesores para este coordinador.
+                            </div>
+                        )}
+                    </div>
+
                     <div className="border-t border-gray-100 bg-gray-50 p-4 text-center text-sm text-gray-500">
                         Total asesores: {dataset.length}
                     </div>

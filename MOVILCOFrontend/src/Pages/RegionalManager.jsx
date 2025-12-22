@@ -217,14 +217,13 @@ const NewsPanel = ({ items }) => (
 
 const DistrictTable = ({ data, currentDate, getGapColor, getProgressBarColor, handleViewCoordinator }) => {
     const [expanded, setExpanded] = useState(null)
-    console.log(data);
-    
+
     return (
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4">
+            <div className="flex flex-col gap-3 border-b border-gray-200 bg-gray-50 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
                 <h3 className="flex items-center gap-2 text-sm font-bold uppercase text-slate-800">
                     <Icon path="M12 2v20M2 12h20" size={16} className="text-red-600" />
-                    Gestión por Dirección Regional
+                    Gestión por Direccion Regional
                 </h3>
                 <div className="flex gap-2">
                     <button className="rounded border border-transparent p-1.5 text-gray-500 hover:border-gray-200 hover:bg-white">
@@ -236,14 +235,14 @@ const DistrictTable = ({ data, currentDate, getGapColor, getProgressBarColor, ha
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="hidden overflow-x-auto md:block">
                 <table className="w-full border-collapse text-left">
                     <thead>
                         <tr className="border-b border-gray-100 bg-white text-[10px] font-bold uppercase tracking-wider text-gray-400">
                             <th className="w-8 px-4 py-3" />
-                            <th className="px-4 py-3">Dirección</th>
+                            <th className="px-4 py-3">Direccion</th>
                             <th className="px-4 py-3 text-center">Meta Mes</th>
-                            <th className="px-4 py-3 text-center text-blue-700">Meta Día {currentDate}</th>
+                            <th className="px-4 py-3 text-center text-blue-700">Meta Dia {currentDate}</th>
                             <th className="px-4 py-3 text-center text-blue-700 font-extrabold">Real</th>
                             <th className="px-4 py-3 text-center text-blue-700">GAP</th>
                             <th className="px-4 py-3 text-center">% Prorrateo</th>
@@ -349,7 +348,7 @@ const DistrictTable = ({ data, currentDate, getGapColor, getProgressBarColor, ha
                                                         <thead className="border-b border-gray-200 bg-gray-50 text-gray-500">
                                                             <tr>
                                                                 <th className="px-4 py-2 text-left">Coordinación</th>
-                                                                <th className="px-4 py-2 text-center">Meta Día</th>
+                                                                <th className="px-4 py-2 text-center">Meta Dia</th>
                                                                 <th className="px-4 py-2 text-center">Meta Semana</th>
                                                                 <th className="px-4 py-2 text-center">Meta Mes</th>
                                                                 <th className="px-4 py-2 text-center">Ventas</th>
@@ -399,6 +398,148 @@ const DistrictTable = ({ data, currentDate, getGapColor, getProgressBarColor, ha
                         ))}
                     </tbody>
                 </table>
+            </div>
+            <div className="space-y-4 p-4 md:hidden">
+                {data.map((d) => (
+                    <div key={d.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[10px] font-bold uppercase text-gray-400">Direccion</p>
+                                <p className="text-base font-bold text-slate-800">{d.name}</p>
+                                <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                                    <Icon path="M12 20.5 20 9a8 8 0 1 0-16 0l8 11.5Z" size={12} />
+                                    {d.director}
+                                </p>
+                            </div>
+                            <button
+                                className="flex items-center gap-2 rounded-full border border-gray-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-700 transition hover:border-slate-300"
+                                onClick={() => setExpanded(expanded === d.id ? null : d.id)}
+                            >
+                                {expanded === d.id ? "Ocultar" : "Ver detalle"}
+                                <Icon path="m6 9 6 6 6-6" size={14} className={expanded === d.id ? "text-slate-800" : "rotate-180 text-gray-500"} />
+                            </button>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <p className="text-[10px] font-bold uppercase text-gray-400">Meta Mes</p>
+                                <p className="text-sm font-bold text-slate-900">{d.monthGoal}</p>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <p className="text-[10px] font-bold uppercase text-blue-600">Meta Dia {currentDate}</p>
+                                <p className="text-sm font-bold text-slate-900">{d.proratedGoal}</p>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <p className="text-[10px] font-bold uppercase text-blue-600">Real</p>
+                                <p className="text-sm font-bold text-slate-900">{d.sales}</p>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <p className="text-[10px] font-bold uppercase text-gray-400">GAP</p>
+                                <p className={`text-sm font-bold ${getGapColor(d.gap)}`}>
+                                    {d.gap > 0 ? "+" : ""}
+                                    {d.gap}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                                <CircularProgress
+                                    value={d.proratedCompliance}
+                                    size={46}
+                                    strokeWidth={5}
+                                    colorClass={d.proratedCompliance >= 90 ? "text-emerald-500" : d.proratedCompliance >= 60 ? "text-amber-500" : "text-red-500"}
+                                />
+                                <div className="text-[11px] text-gray-500">
+                                    <p className="font-bold text-slate-800">Prorrateo</p>
+                                    <p>{d.proratedCompliance.toFixed(1)}% cumplimiento</p>
+                                </div>
+                            </div>
+                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                                <button
+                                    className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-xs font-bold text-gray-600 transition hover:bg-gray-50 sm:w-auto"
+                                    onClick={() => handleViewCoordinator(d.id)}
+                                >
+                                    Ver Director
+                                </button>
+                                <button
+                                    className="w-full rounded bg-red-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-red-700 sm:w-auto"
+                                    onClick={() => handleViewCoordinator(d.id)}
+                                >
+                                    Ver Coordinaciones
+                                </button>
+                            </div>
+                        </div>
+
+                        {expanded === d.id && (
+                            <div className="mt-4 space-y-3 border-t border-gray-200 pt-3">
+                                <div className="flex flex-col gap-3 rounded-lg bg-slate-50 p-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500">
+                                            {d.director?.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase text-gray-400">Director Responsable</p>
+                                            <p className="font-bold text-slate-800">{d.director}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button className="flex items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-[11px] font-bold text-gray-600 transition hover:bg-gray-50">
+                                            <Icon path="M3 5h18M3 5v14h18V5" size={14} />
+                                            Correo
+                                        </button>
+                                        <button className="flex items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-[11px] font-bold text-gray-600 transition hover:bg-gray-50">
+                                            <Icon path="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5" size={14} />
+                                            Chat
+                                        </button>
+                                        <button
+                                            className="flex items-center gap-2 rounded border border-red-600 bg-red-600 px-3 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-red-700"
+                                            onClick={() => handleViewCoordinator(d.id)}
+                                        >
+                                            Ver Director
+                                            <Icon path="m9 18 6-6-6-6" size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    {d.coordinators.map((coord) => (
+                                        <div key={coord.id} className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <p className="text-[10px] font-bold uppercase text-gray-400">CoordinaciИn</p>
+                                                    <p className="text-sm font-bold text-slate-800">{coord.coord_unit_name}</p>
+                                                    <p className={`text-xs font-bold ${getGapColor(coord.gap)}`}>
+                                                        GAP {coord.gap > 0 ? "+" : ""}
+                                                        {coord.gap}
+                                                    </p>
+                                                </div>
+                                                <span className="rounded-full bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-600">Ventas {coord.sales}</span>
+                                            </div>
+
+                                            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-gray-600">
+                                                <div className="rounded bg-slate-50 px-2 py-1">Meta Dia: {coord.metaDia}</div>
+                                                <div className="rounded bg-slate-50 px-2 py-1">Meta Semana: {coord.metaSemana}</div>
+                                                <div className="rounded bg-slate-50 px-2 py-1">Meta Mes: {coord.metaMes}</div>
+                                                <div className="rounded bg-slate-50 px-2 py-1">Prorrateo: {coord.proratedCompliance.toFixed(0)}%</div>
+                                            </div>
+
+                                            <div className="mt-3 flex items-center justify-between gap-2">
+                                                <ProgressBar value={coord.proratedCompliance} colorClass={getProgressBarColor(coord.proratedCompliance)} />
+                                                <button
+                                                    className="rounded bg-red-600 px-3 py-1 text-[11px] font-bold text-white transition hover:bg-red-700"
+                                                    onClick={() => handleViewCoordinator(coord.id)}
+                                                >
+                                                    Ver Coord.
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ))}
             </div>
         </div>
     )
@@ -551,10 +692,10 @@ export default function RegionalManager() {
                 <Header onMenu={() => setSidebarOpen(true)} currentDay={currentDay} totalDays={totalDays} progressPct={progressTimePct} />
 
                 <main className="flex-1 overflow-y-auto bg-slate-50 p-4 lg:p-8">
-                    <div className="flex flex-wrap items-end justify-end gap-3 mb-6">
+                    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between lg:justify-end">
                         <button
                             onClick={() => window.location.href = '/SendMails'}
-                            className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 hover:shadow-md transition"
+                            className="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:shadow-md sm:w-auto"
                         >
                             <div className="bg-orange-50 text-orange-600 p-2 rounded-lg">
                                 <Mail size={18} />
@@ -571,7 +712,7 @@ export default function RegionalManager() {
 
                         <button
                             onClick={goDB}
-                            className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 hover:shadow-md transition"
+                            className="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:shadow-md sm:w-auto"
                         >
                             <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg">
                                 <Database size={18} />
@@ -586,7 +727,7 @@ export default function RegionalManager() {
                             </div>
                         </button>
 
-                        <div className="mr-15">
+                        <div className="w-full sm:w-auto sm:ml-auto">
                             <SiappBackupsButton />
                         </div>
                     </div>

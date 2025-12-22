@@ -233,52 +233,166 @@ function WeeklyTable({ data, period }) {
         );
     };
 
-    return (
-        <div className="bg-white shadow rounded-xl border border-gray-100 overflow-x-auto">
-            <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
-                    <tr>
-                        <th className="px-4 py-2 text-left">Asesor</th>
-                        <th className="px-4 py-2">Distrito</th>
-                        <th className="px-4 py-2">Ventas Distrito</th>
-                        <th className="px-4 py-2">Fuera</th>
-                        <th className="px-4 py-2">Totales</th>
-                        <th className="px-4 py-2">Novedades</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.map(r => {
-                        const isOpen = openDoc === r.documento;
-                        return (
-                            <Fragment key={r.documento || r.asesor_id}>
-                                <tr
-                                    className={`border-t cursor-pointer hover:bg-gray-50 ${isOpen ? "bg-gray-50" : ""}`}
-                                    onClick={() => toggleAdvisor(r)}
-                                >
-                                    <td className="px-4 py-2 flex items-center gap-2">
-                                        <span>{r.nombre}</span>
-                                        <span className="text-gray-500">
-                                            {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-2">{r.distrito_claro}</td>
-                                    <td className="px-4 py-2 text-center">{r.ventas_distrito}</td>
-                                    <td className="px-4 py-2 text-center">{r.ventas_fuera}</td>
-                                    <td className="px-4 py-2 text-center font-bold">{r.ventas_totales}</td>
-                                    <td className="px-4 py-2">
-                                        {r.novedades?.length ? (
-                                            <span className="text-red-600 font-semibold">
-                                                {r.novedades.length} novedades
-                                            </span>
-                                        ) : "Sin novedades"}
-                                    </td>
+    const renderDetailContent = (advisor) => {
+        const doc = advisor.documento;
+        const state = details[doc] || {};
+        const items = state.items || [];
+        return (
+            <div className="mt-3 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                {state.loading && (
+                    <div className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        Cargando detalle...
+                    </div>
+                )}
+                {state.error && (
+                    <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                        {state.error}
+                    </div>
+                )}
+                {!state.loading && !state.error && !items.length && (
+                    <div className="text-sm text-gray-600">Sin ventas detalladas en este periodo.</div>
+                )}
+                {!state.loading && !state.error && items.length > 0 && (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-xs">
+                            <thead className="bg-white">
+                                <tr className="border">
+                                    <th className="px-2 py-1 text-left">Fecha</th>
+                                    <th className="px-2 py-1 text-left">Zona</th>
+                                    <th className="px-2 py-1 text-left">Poblacion</th>
+                                    <th className="px-2 py-1 text-left">Linea</th>
+                                    <th className="px-2 py-1 text-left">Cuenta</th>
+                                    <th className="px-2 py-1 text-left">OT</th>
+                                    <th className="px-2 py-1 text-left">Tipo</th>
+                                    <th className="px-2 py-1 text-left">Renta</th>
+                                    <th className="px-2 py-1 text-left">Estado</th>
                                 </tr>
-                                {isOpen && renderDetailsRow(r)}
-                            </Fragment>
-                        );
-                    })}
-                </tbody>
-            </table>
+                            </thead>
+                            <tbody>
+                                {items.map(item => (
+                                    <tr key={item.id} className="border-t">
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.fecha?.slice(0, 10) || "-"}</td>
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.zona || item.area || "-"}</td>
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.poblacion || "-"}</td>
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.linea_negocio || "-"}</td>
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.cuenta || "-"}</td>
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.ot || "-"}</td>
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.tipo_contrato || item.tipo_prodcuto || "-"}</td>
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.renta || "-"}</td>
+                                        <td className="px-2 py-1 whitespace-nowrap">{item.estado_liquidacion || "-"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-white shadow rounded-xl border border-gray-100 overflow-x-auto hidden md:block">
+                <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-4 py-2 text-left">Asesor</th>
+                            <th className="px-4 py-2">Distrito</th>
+                            <th className="px-4 py-2">Ventas Distrito</th>
+                            <th className="px-4 py-2">Fuera</th>
+                            <th className="px-4 py-2">Totales</th>
+                            <th className="px-4 py-2">Novedades</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.map(r => {
+                            const isOpen = openDoc === r.documento;
+                            return (
+                                <Fragment key={r.documento || r.asesor_id}>
+                                    <tr
+                                        className={`border-t cursor-pointer hover:bg-gray-50 ${isOpen ? "bg-gray-50" : ""}`}
+                                        onClick={() => toggleAdvisor(r)}
+                                    >
+                                        <td className="px-4 py-2 flex items-center gap-2">
+                                            <span>{r.nombre}</span>
+                                            <span className="text-gray-500">
+                                                {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-2">{r.distrito_claro}</td>
+                                        <td className="px-4 py-2 text-center">{r.ventas_distrito}</td>
+                                        <td className="px-4 py-2 text-center">{r.ventas_fuera}</td>
+                                        <td className="px-4 py-2 text-center font-bold">{r.ventas_totales}</td>
+                                        <td className="px-4 py-2">
+                                            {r.novedades?.length ? (
+                                                <span className="text-red-600 font-semibold">
+                                                    {r.novedades.length} novedades
+                                                </span>
+                                            ) : "Sin novedades"}
+                                        </td>
+                                    </tr>
+                                    {isOpen && (
+                                        <tr className="bg-gray-50">
+                                            <td colSpan={6} className="p-4">
+                                                {renderDetailContent(r)}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="md:hidden space-y-3">
+                {data.map((r) => {
+                    const isOpen = openDoc === r.documento;
+                    return (
+                        <div
+                            key={r.documento || r.asesor_id}
+                            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                        >
+                            <button
+                                className="flex w-full items-start justify-between gap-2 text-left"
+                                onClick={() => toggleAdvisor(r)}
+                            >
+                                <div>
+                                    <p className="text-sm font-bold text-gray-900">{r.nombre}</p>
+                                    <p className="text-xs text-gray-500">{r.documento}</p>
+                                </div>
+                                <span className="text-gray-500">
+                                    {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                </span>
+                            </button>
+
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                                    <p className="text-[10px] uppercase text-gray-400">Distrito</p>
+                                    <p className="font-semibold text-gray-800">{r.distrito_claro}</p>
+                                </div>
+                                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                                    <p className="text-[10px] uppercase text-gray-400">Ventas Distrito</p>
+                                    <p className="font-semibold text-gray-800">{r.ventas_distrito}</p>
+                                </div>
+                                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                                    <p className="text-[10px] uppercase text-gray-400">Ventas Fuera</p>
+                                    <p className="font-semibold text-gray-800">{r.ventas_fuera}</p>
+                                </div>
+                                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                                    <p className="text-[10px] uppercase text-gray-400">Totales</p>
+                                    <p className="text-base font-bold text-gray-900">{r.ventas_totales}</p>
+                                </div>
+                                <div className="col-span-2 rounded-lg bg-red-50 px-3 py-2 text-red-700">
+                                    {r.novedades?.length ? `${r.novedades.length} novedades` : "Sin novedades"}
+                                </div>
+                            </div>
+
+                            {isOpen && renderDetailContent(r)}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
@@ -294,7 +408,7 @@ function WeeklyTrend({ data }) {
     );
 
     const chartHeight = 240;
-    const chartWidth = Math.max(weeks.length * 180, 880);
+    const chartWidth = Math.max(weeks.length * 140, 720);
     const padding = 28;
     const maxTotal = Math.max(...totals, 1);
 
@@ -323,51 +437,54 @@ function WeeklyTrend({ data }) {
         <div className="bg-white shadow rounded-xl p-6 border border-gray-100">
             <h2 className="text-xl font-semibold mb-4">Tendencia Semanal</h2>
 
-            <div className="h-64">
-                <svg
-                    viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                    preserveAspectRatio="none"
-                    className="w-full h-full"
-                >
-                    <defs>
-                        <linearGradient id="weeklyTrendFill" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#2563eb" stopOpacity="0.18" />
-                            <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
-                        </linearGradient>
-                    </defs>
+            <div className="overflow-x-auto">
+                <div className="h-64" style={{ minWidth: `${chartWidth}px` }}>
+                    <svg
+                        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                        width={chartWidth}
+                        height={chartHeight}
+                        className="h-full w-full"
+                    >
+                        <defs>
+                            <linearGradient id="weeklyTrendFill" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0%" stopColor="#2563eb" stopOpacity="0.18" />
+                                <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+                            </linearGradient>
+                        </defs>
 
-                    <polygon points={areaPoints} fill="url(#weeklyTrendFill)" />
-                    <polyline
-                        points={linePoints}
-                        fill="none"
-                        stroke="#2563eb"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
+                        <polygon points={areaPoints} fill="url(#weeklyTrendFill)" />
+                        <polyline
+                            points={linePoints}
+                            fill="none"
+                            stroke="#2563eb"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
 
-                    {xPositions.map((x, i) => (
-                        <g key={weeks[i]}>
-                            <circle cx={x} cy={yPositions[i]} r="4" fill="#2563eb" />
-                            <text
-                                x={x}
-                                y={chartHeight - 8}
-                                textAnchor="middle"
-                                className="fill-gray-600 text-xs"
-                            >
-                                Semana {weeks[i]}
-                            </text>
-                            <text
-                                x={x}
-                                y={yPositions[i] - 12}
-                                textAnchor="middle"
-                                className="fill-gray-800 text-xs font-semibold"
-                            >
-                                {totals[i]}
-                            </text>
-                        </g>
-                    ))}
-                </svg>
+                        {xPositions.map((x, i) => (
+                            <g key={weeks[i]}>
+                                <circle cx={x} cy={yPositions[i]} r="4" fill="#2563eb" />
+                                <text
+                                    x={x}
+                                    y={chartHeight - 10}
+                                    textAnchor="middle"
+                                    className="fill-gray-600 text-[11px]"
+                                >
+                                    Semana {weeks[i]}
+                                </text>
+                                <text
+                                    x={x}
+                                    y={yPositions[i] - 12}
+                                    textAnchor="middle"
+                                    className="fill-gray-800 text-xs font-semibold"
+                                >
+                                    {totals[i]}
+                                </text>
+                            </g>
+                        ))}
+                    </svg>
+                </div>
             </div>
         </div>
     );

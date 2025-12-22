@@ -103,8 +103,8 @@ const ProgressBar = ({ value, max, colorClass = "bg-red-600" }) => {
 
 const SalesList = ({ sales, onSelect, filterType, setFilterType }) => (
   <div className="space-y-4">
-    <div className="flex items-center justify-between">
-      <h3 className="font-bold text-slate-800 text-lg">Gestiones Recientes</h3>
+    <div className="flex items-center justify-between flex-wrap">
+      <h3 className="font-bold text-slate-800 text-lg ">Gestiones Recientes</h3>
       <div className="flex bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
         {["all", "pendiente", "aprobada", "rechazada"].map((type) => (
           <button

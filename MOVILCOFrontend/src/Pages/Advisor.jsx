@@ -11,8 +11,10 @@ import {
     selectCoordinatorAdvisorsLoading,
     selectCoordinatorId,
     selectCoordinatorMeta,
+    setCoordinatorId,
     setCoordinatorPeriod
 } from "../../store/reducers/advisorsReducers"
+import { getStoredUser } from "../utils/auth"
 const META_CONEXIONES = 13
 const DIAS_META = 30
 
@@ -100,12 +102,30 @@ export default function Advisors() {
     const lastFetchRef = useRef({ id: null, period: null })
 
     useEffect(() => {
-        if (!coordinatorId) return
+        const stored = getStoredUser()
+        const storedId = stored?.coordinator_id || stored?.id
+        if (storedId && storedId !== coordinatorId) {
+            dispatch(setCoordinatorId(storedId))
+        }
+    }, [dispatch, coordinatorId])
+
+    useEffect(() => {
+        const stored = getStoredUser()
+        const desiredId = stored?.coordinator_id || stored?.id || coordinatorId
+        if (!desiredId) return
+
+        // Mantener Redux sincronizado antes de disparar fetch
+        if (desiredId !== coordinatorId) {
+            dispatch(setCoordinatorId(desiredId))
+            return
+        }
+
         const comboChanged =
-            coordinatorId !== lastFetchRef.current.id || coordinatorMeta.period !== lastFetchRef.current.period
+            desiredId !== lastFetchRef.current.id || coordinatorMeta.period !== lastFetchRef.current.period
         if (!comboChanged) return
-        lastFetchRef.current = { id: coordinatorId, period: coordinatorMeta.period }
-        dispatch(fetchAdvisorsByCoordinator({ coordinatorId, period: coordinatorMeta.period }))
+
+        lastFetchRef.current = { id: desiredId, period: coordinatorMeta.period }
+        dispatch(fetchAdvisorsByCoordinator({ coordinatorId: desiredId, period: coordinatorMeta.period }))
     }, [dispatch, coordinatorId, coordinatorMeta.period])
 
     useEffect(() => {

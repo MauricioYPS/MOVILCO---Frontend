@@ -35,11 +35,14 @@ const Icon = ({ name, size = 18, className = "" }) => (
   </svg>
 );
 
+const roleStorage = localStorage.getItem("auth_user") ? JSON.parse(localStorage.getItem("auth_user")) : null;
+const role = roleStorage?.rol || "COORDINACION";
+console.log(role, "roleando");
+
 const InfoCard = ({ icon, label, value, highlight, small }) => (
   <div
-    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-      highlight ? "bg-white/15 border border-white/20" : "hover:bg-white/10"
-    }`}
+    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${highlight ? "bg-white/15 border border-white/20" : "hover:bg-white/10"
+      }`}
   >
     <div className={`p-2 rounded-lg ${highlight ? "bg-white/25 text-white" : "bg-white/15 text-white"}`}>
       <Icon name={icon} size={16} />
@@ -103,11 +106,13 @@ export default function SideBar() {
 
   const asesor = profile?.asesor || {};
   const coord = profile?.coordinador || {};
-const stored = localStorage.getItem("auth_user");
-const parsed = stored ? JSON.parse(stored) : {};
+  console.log("Profile ", profile);
 
-const org_unit_id = parsed?.org_unit_id || "";
-const userInfo = {
+  const stored = localStorage.getItem("auth_user");
+  const parsed = stored ? JSON.parse(stored) : {};
+
+  const org_unit_id = parsed?.org_unit_id || "";
+  const userInfo = {
     name: asesor.name || "Usuario Movilco",
     email: asesor.email || "usuario@movilco.com",
     phone: asesor.phone || "000 000 0000",
@@ -115,8 +120,8 @@ const userInfo = {
     regional: asesor.regional || "Regional N/D",
     budget: asesor.presupuesto ? `${asesor.presupuesto}` : "Presupuesto N/D",
   };
-  console.log(org_unit_id);
-  
+  console.log("SideBar", userInfo);
+
 
   const bossInfo = {
     name: coord.name || "Jefe no asignado",
@@ -166,7 +171,9 @@ const userInfo = {
             <div className="text-xs text-white bg-red-500/30 px-3 py-2 rounded-lg border border-red-400/40">{error}</div>
           )}
           <InfoCard icon="map" label="Distrito" value={userInfo.district} />
-          <InfoCard icon="cash" label="Presupuesto" value={userInfo.budget} highlight />
+
+            <InfoCard icon="cash" label="Presupuesto" value={userInfo.budget} highlight />
+
           <div className="h-px bg-white/20 my-4 mx-2" />
           <InfoCard icon="mail" label="Correo" value={userInfo.email} small />
           <InfoCard icon="phone" label="Telefono" value={userInfo.phone} />
@@ -174,36 +181,39 @@ const userInfo = {
       </div>
 
       <div className="p-6 red-movilco border-t text-white border-red-800/60">
-        <div className="mb-4">
-          <div className="text-[10px] font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
-            <Icon name="user" size={14} className="text-white" /> <span>Jefe Directo</span>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/15 hover:border-white/30 transition-colors group shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
-                {bossInfo.name.charAt(0)}
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-sm truncate text-white group-hover:text-red-100 transition-colors">
-                  {bossInfo.name}
-                </p>
-                <p className="text-xs text-white/80 truncate">{bossInfo.cargo}</p>
-              </div>
+        {asesor.jerarquia === "ASESORIA" && (
+          <div className="mb-4">
+            <div className="text-[10px] font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Icon name="user" size={14} className="text-white" /> <span>Jefe Directo</span>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-white/10 space-y-1.5">
-              <div className="flex items-center gap-2 text-xs text-white/80">
-                <Icon name="building" size={12} className="opacity-70 text-white" />
-                <span className="truncate">{bossInfo.district}</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/15 hover:border-white/30 transition-colors group shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
+                  {bossInfo.name.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm truncate text-white group-hover:text-red-100 transition-colors">
+                    {bossInfo.name}
+                  </p>
+                  <p className="text-xs text-white/80 truncate">{bossInfo.cargo}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-white/80">
-                <Icon name="mail" size={12} className="opacity-70 text-white" />
-                <span className="truncate">{bossInfo.email}</span>
+
+              <div className="mt-3 pt-3 border-t border-white/10 space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-white/80">
+                  <Icon name="building" size={12} className="opacity-70 text-white" />
+                  <span className="truncate">{bossInfo.district}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-white/80">
+                  <Icon name="mail" size={12} className="opacity-70 text-white" />
+                  <span className="truncate">{bossInfo.email}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
 
         <button
           className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl transition-all border border-white/20 shadow-sm group"

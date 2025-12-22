@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { id: "asesores", label: "Asesores", link: "/Advisors" },
   { id: "coordinadores", label: "Coordinadores", link: "/Coordinators" },
   { id: "gerentes", label: "Gerentes", link: "/RegionalManager" },
+  { id: "recreoCoordinadores", label: "Recreo coordinadores", link: "/WeeklyCoordinatorPage" },
 ];
 
 export default function Navbar() {
@@ -25,7 +26,7 @@ export default function Navbar() {
       return NAV_ITEMS.filter((item) => item.id === "dashboardAsesores");
     }
     if (["COORDINACION", "COORDINADOR COMERCIAL"].includes(userRole)) {
-      return NAV_ITEMS.filter((item) => ["asesores", ].includes(item.id));
+      return NAV_ITEMS.filter((item) => ["asesores","recreoCoordinadores" ].includes(item.id));
     }
     if (["DIRECCION", "DIRECTOR COMERCIAL"].includes(userRole)) {
       return NAV_ITEMS.filter((item) => [ "coordinadores"].includes(item.id));

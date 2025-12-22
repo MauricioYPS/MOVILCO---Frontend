@@ -2,6 +2,33 @@ import { Fragment, useEffect, useMemo, useState } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import { api } from "../../store/api"
+import SiappBackupsButton from "../Props/SiappBackupsButton"
+import { Database, Mail } from "lucide-react"
+
+const IconBase = ({ size = 20, className = "", children }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        width={size}
+        height={size}
+        className={className}
+    >
+        {children}
+    </svg>
+)
+const Users = (props) => (
+    <IconBase {...props}>
+        <path d="M9 7a3 3 0 11-6 0 3 3 0 016 0Z" />
+        <path d="M21 7a3 3 0 11-6 0 3 3 0 016 0Z" />
+        <path d="M2 21v-2a4 4 0 014-4h2a4 4 0 014 4v2" />
+        <path d="M14 21v-2a4 4 0 014-4h2a4 4 0 014 4v2" />
+    </IconBase>
+)
 
 const Icon = ({ path, size = 20, className = "" }) => (
     <svg
@@ -190,7 +217,8 @@ const NewsPanel = ({ items }) => (
 
 const DistrictTable = ({ data, currentDate, getGapColor, getProgressBarColor, handleViewCoordinator }) => {
     const [expanded, setExpanded] = useState(null)
-
+    console.log(data);
+    
     return (
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4">
@@ -332,7 +360,7 @@ const DistrictTable = ({ data, currentDate, getGapColor, getProgressBarColor, ha
                                                         <tbody className="divide-y divide-gray-100">
                                                             {d.coordinators.map((coord) => (
                                                                 <tr key={coord.id} className="hover:bg-gray-50">
-                                                                    <td className="px-4 py-3 font-medium text-slate-700">{coord.name}</td>
+                                                                    <td className="px-4 py-3 font-medium text-slate-700">{coord.coord_unit_name}</td>
                                                                     <td className="px-4 py-3 text-center text-gray-500">{coord.metaDia}</td>
                                                                     <td className="px-4 py-3 text-center text-gray-500">{coord.metaSemana}</td>
                                                                     <td className="px-4 py-3 text-center text-gray-500">{coord.metaMes}</td>
@@ -409,7 +437,7 @@ export default function RegionalManager() {
     const [directions, setDirections] = useState([])
     const [novedades, setNovedades] = useState([])
     const [loading, setLoading] = useState(false)
-    const [periodDirections] = useState("2025-08")
+    const [periodDirections] = useState("2025-12")
     const [periodNovedades] = useState(currentPeriod())
     const navigate = useNavigate()
     const handleViewCoordinator = (coordId) => {
@@ -523,15 +551,44 @@ export default function RegionalManager() {
                 <Header onMenu={() => setSidebarOpen(true)} currentDay={currentDay} totalDays={totalDays} progressPct={progressTimePct} />
 
                 <main className="flex-1 overflow-y-auto bg-slate-50 p-4 lg:p-8">
-                    <div className="flex items-end justify-end ">
-                        <button className="flex w-full items-center justify-center gap-2 rounded-md bg-orange-300 px-4 py-2 text-sm font-semibold text-black shadow-sm transition hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 sm:w-auto mb-4 mr-10 " onClick={() => window.location.href = '/SendMails'}>
-                            Enviar Correos
-                        </button>
-                        <button onClick={goDB}
-                            className="flex w-full items-center justify-center gap-2 rounded-md bg-green-300 px-4 py-2 text-sm font-semibold text-black shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 sm:w-auto mb-4 "
+                    <div className="flex flex-wrap items-end justify-end gap-3 mb-6">
+                        <button
+                            onClick={() => window.location.href = '/SendMails'}
+                            className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 hover:shadow-md transition"
                         >
-                            Actualizar DB
+                            <div className="bg-orange-50 text-orange-600 p-2 rounded-lg">
+                                <Mail size={18} />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-xs font-bold text-gray-400 uppercase">
+                                    Comunicaciones
+                                </div>
+                                <div className="text-sm font-bold text-slate-800">
+                                    Enviar Correos
+                                </div>
+                            </div>
                         </button>
+
+                        <button
+                            onClick={goDB}
+                            className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 hover:shadow-md transition"
+                        >
+                            <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg">
+                                <Database size={18} />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-xs font-bold text-gray-400 uppercase">
+                                    Datos
+                                </div>
+                                <div className="text-sm font-bold text-slate-800">
+                                    Actualizar DB
+                                </div>
+                            </div>
+                        </button>
+
+                        <div className="mr-15">
+                            <SiappBackupsButton />
+                        </div>
                     </div>
 
                     <div className="mx-auto max-w-[1400px] space-y-6">

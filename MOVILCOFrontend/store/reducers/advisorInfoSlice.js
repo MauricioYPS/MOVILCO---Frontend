@@ -49,7 +49,7 @@ export const loadAdvisorInfo = createAsyncThunk("advisorInfo/loadAdvisorInfo", a
 export const loadAdvisorKpi = createAsyncThunk("advisorInfo/loadAdvisorKpi", async ({ documento, period }, { rejectWithValue }) => {
   try {
     const { data } = await axios.get(`${api}/api/kpi/get`, {
-      params: { documento, period }
+      params: { documento, period}
     })
     return mapAdvisorKpi(data || {})
   } catch (err) {

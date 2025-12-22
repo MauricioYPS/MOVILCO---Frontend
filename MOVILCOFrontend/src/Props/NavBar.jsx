@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import Logo from "./Logo";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import useAuthSession from "../hooks/useAuthSession";
+import { clearSession, getStoredUser } from "../utils/auth";
+import axios from "axios";
+import { api } from "../../store/api";
 
 const NAV_ITEMS = [
   { id: "dashboardAsesores", label: "Dashboard", link: "/AdvisorDashboard" },
@@ -16,10 +19,23 @@ export default function Navbar() {
   const [selectedNav, setSelectedNav] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const { role: sessionRole } = useAuthSession();
+  const navigate = useNavigate();
 
   const userRole = useMemo(() => {
     return sessionRole || "";
   }, [sessionRole]);
+
+  const storedUser = useMemo(() => getStoredUser() || {}, []);
+  const userName = storedUser.name || storedUser.full_name || "Usuario";
+  const userEmail = storedUser.email || "usuario@movilco.com";
+  const userDistrict = storedUser.district || storedUser.regional || storedUser.unit || "";
+  const userPhone = storedUser.phone || "";
+  const initials = (userName || "U")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase())
+    .join("") || "U";
 
   const visibleNavItems = useMemo(() => {
     if (["ASESOR", "ASESORIA", "ASESOR COMERCIAL"].includes(userRole)) {
@@ -36,6 +52,17 @@ export default function Navbar() {
     }
     return NAV_ITEMS;
   }, [userRole]);
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${api}/api/auth/logout`, {}, { withCredentials: true });
+    } catch (err) {
+      console.error("Logout error", err?.response?.data || err?.message);
+    } finally {
+      clearSession();
+      navigate("/SignIn");
+    }
+  };
 
   return (
     <nav className="bg-white shadow-md w-full">
@@ -84,25 +111,51 @@ export default function Navbar() {
         </div>
 
         {menuOpen && (
-          <div className="lg:hidden mt-2 space-y-1 rounded-lg border border-slate-200 bg-white shadow-sm p-2">
-            {visibleNavItems.map((item) => {
-              const active = activeId === item.id;
-              const classes = active ? "bg-red-50 text-[#cc0000]" : "hover:bg-red-50 hover:text-[#cc0000]";
-              return (
-                <NavLink
-                  key={item.id}
-                  to={item.link ?? "#"}
-                  className={`block px-3 py-2 rounded transition-colors ${classes}`}
-                  onClick={() => {
-                    setActiveId(item.id);
-                    setSelectedNav(selectedNav === item.id ? null : item.id);
-                    setMenuOpen(false);
-                  }}
-                >
-                  {item.label}
-                </NavLink>
-              );
-            })}
+          <div className="lg:hidden mt-2 space-y-3 rounded-lg border border-slate-200 bg-white shadow-sm p-3">
+            <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-sm font-bold text-red-700">
+                {initials}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">{userName}</p>
+                <p className="text-[11px] text-slate-600 truncate">
+                  {userRole || "Rol N/D"} {userDistrict ? `• ${userDistrict}` : ""}
+                </p>
+                {userEmail && <p className="text-[11px] text-slate-500 truncate">{userEmail}</p>}
+                {userPhone && <p className="text-[11px] text-slate-500 truncate">{userPhone}</p>}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              {visibleNavItems.map((item) => {
+                const active = activeId === item.id;
+                const classes = active ? "bg-red-50 text-[#cc0000]" : "hover:bg-red-50 hover:text-[#cc0000]";
+                return (
+                  <NavLink
+                    key={item.id}
+                    to={item.link ?? "#"}
+                    className={`block px-3 py-2 rounded transition-colors ${classes}`}
+                    onClick={() => {
+                      setActiveId(item.id);
+                      setSelectedNav(selectedNav === item.id ? null : item.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5m0 0v-5m0 5-6.293-6.293a1 1 0 00-.707-.293H9a2 2 0 01-2-2V7m0 0a2 2 0 012-2h3.586a1 1 0 01.707.293L15 6m-8 1h.01" />
+              </svg>
+              Cerrar sesión
+            </button>
           </div>
         )}
       </div>

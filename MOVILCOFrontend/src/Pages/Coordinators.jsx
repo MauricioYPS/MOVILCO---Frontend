@@ -288,7 +288,8 @@ export default function Coordinators() {
 
                 <main className="flex-1 overflow-y-auto p-4 lg:p-8">
                     <div className="mx-auto max-w-7xl">
-                            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="mb-6 flex flex-col gap-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                                 <div>
                                     <h1 className="text-2xl font-bold text-gray-900">Directorio: {meta?.direction?.name ?? "Direccion"}</h1>
                                     <p className="mt-1 text-sm text-gray-500">
@@ -296,9 +297,9 @@ export default function Coordinators() {
                                     </p>
                                     {error && <p className="mt-1 text-sm text-red-600">No fue posible cargar coordinadores: {error}</p>}
                                 </div>
-
-                            <div className="flex gap-4">
-                                <div className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-2 shadow-sm">
+                            </div>
+                            <div className="flex flex-wrap items-stretch gap-3 sm:gap-4">
+                                <div className="flex min-w-[200px] flex-1 items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow-sm sm:flex-none sm:w-[230px]">
                                     <div className="rounded-md bg-green-50 p-2 text-green-600">
                                         <Users size={16} />
                                     </div>
@@ -307,8 +308,7 @@ export default function Coordinators() {
                                         <p className="text-lg font-bold text-gray-800">{stats.totalCoordinators}</p>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-2 shadow-sm">
+                                <div className="flex min-w-[200px] flex-1 items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow-sm sm:flex-none sm:w-[230px]">
                                     <div className="rounded-md bg-blue-50 p-2 text-blue-600">
                                         <Briefcase size={16} />
                                     </div>
@@ -317,7 +317,7 @@ export default function Coordinators() {
                                         <p className="text-lg font-bold text-gray-800">{stats.totalSales}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-2 shadow-sm">
+                                <div className="flex min-w-[200px] flex-1 items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow-sm sm:flex-none sm:w-[230px]">
                                     <div className="rounded-md bg-orange-50 p-2 text-orange-600">
                                         <Users size={16} />
                                     </div>
@@ -326,11 +326,50 @@ export default function Coordinators() {
                                         <p className="text-lg font-bold text-gray-800">{stats.totalAdvisors}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 rounded-lg ">
-                                    <div>
-                                        <SiappBackupsButton />
-                                    </div>
+                                <div className="flex w-full items-center justify-start rounded-lg sm:w-auto sm:flex-none sm:justify-center">
+                                    <SiappBackupsButton />
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="xl:hidden">
+                            <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                                <div className="mb-4 flex items-center justify-between">
+                                    <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                                        <Bell size={16} className="text-red-600" />
+                                        Ultimas Novedades
+                                    </h3>
+                                    <span className="text-[10px] rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-600">
+                                        {novedadesMock.length} Nuevas
+                                    </span>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {novedadesMock.map((nov) => (
+                                        <div
+                                            key={nov.id}
+                                            className="relative rounded-lg border border-gray-100 bg-gray-50 p-3 transition-transform duration-200 hover:-translate-y-0.5"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="mt-0.5 rounded-md bg-white p-1.5 text-red-500 shadow-sm">
+                                                    <CalendarClock size={14} />
+                                                </div>
+                                                <div>
+                                                    <p className="mb-0.5 text-xs font-bold text-gray-800">{nov.title}</p>
+                                                    <p className="mb-2 text-xs leading-snug text-gray-700">{nov.description}</p>
+                                                    <div className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
+                                                        <CalendarClock size={10} />
+                                                        {nov.time}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button className="mt-4 w-full rounded-lg border border-gray-200 py-2 text-xs font-semibold text-gray-500 transition-colors hover:bg-gray-50">
+                                    Ver historial de notificaciones
+                                </button>
                             </div>
                         </div>
 
@@ -478,7 +517,7 @@ export default function Coordinators() {
                                 </div>
                             </div>
 
-                            <div className="flex w-full flex-col gap-6 xl:w-80">
+                            <div className="hidden w-full flex-col gap-6 xl:flex xl:w-80">
                                 <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
                                     <div className="mb-4 flex items-center justify-between">
                                         <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900">

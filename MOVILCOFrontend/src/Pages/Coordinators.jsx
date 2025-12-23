@@ -282,8 +282,8 @@ export default function Coordinators() {
 
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50 font-sans text-slate-800">
- 
 
+ 
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
                 <main className="flex-1 overflow-y-auto p-4 lg:p-8">
@@ -373,7 +373,7 @@ export default function Coordinators() {
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-6 xl:flex-row">
+                        <div className="flex flex-col gap-6">
                             <div className="flex-1">
                                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
                                     <div className="relative flex-1">
@@ -517,44 +517,36 @@ export default function Coordinators() {
                                 </div>
                             </div>
 
-                            <div className="hidden w-full flex-col gap-6 xl:flex xl:w-80">
-                                <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-                                    <div className="mb-4 flex items-center justify-between">
-                                        <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900">
-                                            <Bell size={16} className="text-red-600" />
-                                            Ultimas Novedades
-                                        </h3>
-                                        <span className="text-[10px] rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-600">
-                                            {novedadesMock.length} Nuevas
-                                        </span>
-                                    </div>
+                        </div>
 
-                                    <div className="space-y-3">
-                                        {novedadesMock.map((nov) => (
-                                            <div
-                                                key={nov.id}
-                                                className="relative p-3 transition-transform duration-200 rounded-lg border border-gray-100 bg-gray-50 hover:-translate-y-0.5"
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    <div className="mt-0.5 rounded-md bg-white p-1.5 text-red-500 shadow-sm">
-                                                        <CalendarClock size={14} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="mb-0.5 text-xs font-bold text-gray-800">{nov.title}</p>
-                                                        <p className="mb-2 text-xs leading-snug text-gray-700">{nov.description}</p>
-                                                        <div className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
-                                                            <CalendarClock size={10} />
-                                                            {nov.time}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                        <div className="hidden xl:block">
+                            <div className="w-full max-w-4xl mx-auto rounded-xl border border-dashed border-gray-200 bg-white/80 p-4 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Bell size={18} className="text-red-600" />
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900">Últimas novedades</p>
+                                            <p className="text-xs text-gray-500">Sección en pausa por ahora</p>
+                                        </div>
                                     </div>
-
-                                    <button className="mt-4 w-full rounded-lg border border-gray-200 py-2 text-xs font-semibold text-gray-500 transition-colors hover:bg-gray-50">
-                                        Ver historial de notificaciones
-                                    </button>
+                                    <span className="text-[11px] rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-600">
+                                        {novedadesMock.length} ítems en espera
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {novedadesMock.map((nov) => (
+                                        <div
+                                            key={nov.id}
+                                            className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600"
+                                        >
+                                            <p className="font-semibold text-gray-800 flex items-center gap-2">
+                                                <CalendarClock size={12} className="text-red-500" />
+                                                {nov.title}
+                                            </p>
+                                            <p className="mt-1 line-clamp-2">{nov.description}</p>
+                                            <p className="mt-1 text-[11px] text-gray-400">{nov.time}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>

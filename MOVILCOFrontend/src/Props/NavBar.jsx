@@ -66,7 +66,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white shadow-md w-full">
-      <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 px-4">
+      <div className="mx-auto w-full min-w-0 px-4 sm:px-6 lg:px-6 xl:px-8 lg:max-w-[calc(100vw-18rem)] xl:max-w-[calc(100vw-20rem)] 2xl:max-w-7xl">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Logo />

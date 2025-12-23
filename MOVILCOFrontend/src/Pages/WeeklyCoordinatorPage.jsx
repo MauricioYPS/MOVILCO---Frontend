@@ -24,12 +24,12 @@ function WeeklyHeader({ selectedWeek, onChange, weeks }) {
     };
 
     return (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 w-full min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 break-words">
                 RECREO Semanal - Coordinacion
             </h1>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-3">
                 <button
                     disabled={currentIndex <= 0}
                     onClick={handlePrev}
@@ -56,14 +56,14 @@ function WeeklyHeader({ selectedWeek, onChange, weeks }) {
 
 function PeriodFilter({ value, onChange, onApply, loading }) {
     return (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-            <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 w-full min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
                 <label className="text-sm text-gray-600">Periodo:</label>
                 <input
                     type="month"
                     value={value}
                     onChange={e => onChange(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto max-w-xs"
                 />
             </div>
             {/* <button
@@ -89,7 +89,7 @@ function WeeklySummary({ data }) {
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 w-full min-w-0">
             {cards.map((c, i) => (
                 <div key={i} className="bg-white shadow rounded-xl p-5 border border-gray-100">
                     <p className="text-sm text-gray-500">{c.title}</p>
@@ -104,17 +104,17 @@ function WeeklyRanking({ data }) {
     const ranking = [...data].sort((a, b) => b.ventas_totales - a.ventas_totales);
 
     return (
-        <div className="bg-white shadow rounded-xl p-6 border border-gray-100 mb-6">
+        <div className="bg-white shadow rounded-xl p-6 border border-gray-100 mb-6 w-full min-w-0">
             <h2 className="text-xl font-semibold mb-4">Ranking Semanal</h2>
 
             <div className="space-y-3">
                 {ranking.map((r, i) => (
-                    <div key={r.asesor_id} className="flex items-center justify-between border px-2 border-dashed">
-                        <div>
-                            <p className="font-medium">{i + 1}. {r.nombre}</p>
-                            <p className="text-sm text-gray-500">{r.distrito_claro}</p>
+                    <div key={r.asesor_id} className="flex items-center justify-between gap-3 border px-3 py-2 border-dashed rounded-lg">
+                        <div className="min-w-0">
+                            <p className="font-medium truncate">{i + 1}. {r.nombre}</p>
+                            <p className="text-sm text-gray-500 truncate">{r.distrito_claro}</p>
                         </div>
-                        <p className="text-lg font-bold">{r.ventas_totales}</p>
+                        <p className="text-lg font-bold shrink-0">{r.ventas_totales}</p>
                     </div>
                 ))}
             </div>
@@ -291,9 +291,9 @@ function WeeklyTable({ data, period }) {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full min-w-0">
             <div className="bg-white shadow rounded-xl border border-gray-100 overflow-x-auto hidden md:block">
-                <table className="min-w-full text-sm">
+                <table className="min-w-full text-sm min-w-[760px]">
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-4 py-2 text-left">Asesor</th>
@@ -408,7 +408,7 @@ function WeeklyTrend({ data }) {
     );
 
     const chartHeight = 240;
-    const chartWidth = Math.max(weeks.length * 140, 720);
+    const chartWidth = Math.max(weeks.length * 120, 360);
     const padding = 28;
     const maxTotal = Math.max(...totals, 1);
 
@@ -434,7 +434,7 @@ function WeeklyTrend({ data }) {
     ].join(" ");
 
     return (
-        <div className="bg-white shadow rounded-xl p-6 border border-gray-100">
+        <div className="bg-white shadow rounded-xl p-6 border border-gray-100 w-full min-w-0">
             <h2 className="text-xl font-semibold mb-4">Tendencia Semanal</h2>
 
             <div className="overflow-x-auto">
@@ -561,7 +561,7 @@ export default function WeeklyCoordinatorPage() {
     const filtered = week ? data.filter(d => d.week_number === week) : [];
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="w-full min-w-0 max-w-screen-2xl mx-auto px-3 py-6 sm:px-4 md:px-6 space-y-6">
             <WeeklyHeader
                 selectedWeek={week}
                 weeks={weeks}

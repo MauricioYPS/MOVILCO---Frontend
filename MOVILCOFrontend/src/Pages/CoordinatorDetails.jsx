@@ -253,7 +253,7 @@ export default function CoordinatorDetails() {
                                     <th className="px-6 py-4 text-right">Accion</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 ">
                                 {dataset.map((advisor) => (
                                     <tr
                                         key={advisor.id}
@@ -314,7 +314,7 @@ export default function CoordinatorDetails() {
                         {dataset.map((advisor) => (
                             <div
                                 key={advisor.id}
-                                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                                className="rounded-xl border-2 border-gray-200 bg-white p-4 shadow-sm ring-1 ring-red-50"
                                 onClick={() => handleViewAdvisor(advisor)}
                             >
                                 <div className="flex items-start justify-between gap-3">

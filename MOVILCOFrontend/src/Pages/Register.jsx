@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { api } from '../../store/api';
 import AuthLayout from './auth/AuthLayout';
+import { persistSession } from '../utils/auth';
 
 const Register = ({ withLayout = true }) => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -24,11 +25,31 @@ const Register = ({ withLayout = true }) => {
     try {
       const { data } = await axios.post(`${api}/api/auth/register`, formData);
       if (data?.ok) {
-        if (data?.token) localStorage.setItem('auth_token', data.token);
-        if (data?.user) localStorage.setItem('auth_user', JSON.stringify(data.user));
-        if (data?.token) axios.defaults.headers.common.Authorization = `Bearer ${data.token}`;
+        if (data?.token && data?.user) {
+          persistSession({ token: data.token, user: data.user });
+        } else {
+          if (data?.token) localStorage.setItem('auth_token', data.token);
+          if (data?.user) localStorage.setItem('auth_user', JSON.stringify(data.user));
+          if (data?.token) axios.defaults.headers.common.Authorization = `Bearer ${data.token}`;
+        }
         setMessage('Registro exitoso');
-        navigate('/home');
+        const userRole = data?.user?.role;
+        switch (userRole) {
+          case 'ASESORIA':
+            navigate('/AdvisorDashboard');
+            break;
+          case 'COORDINACION':
+            navigate('/Advisors');
+            break;
+          case 'DIRECCION':
+            navigate('/Coordinators');
+            break;
+          case 'GERENCIA':
+            navigate('/RegionalManager');
+            break;
+          default:
+            navigate('/home');
+        }
       } else {
         setError('No se pudo registrar, intenta nuevamente');
       }

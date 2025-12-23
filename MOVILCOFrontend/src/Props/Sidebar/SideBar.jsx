@@ -143,44 +143,69 @@ export default function SideBar() {
     }
   };
 
-  return (
-    <aside
-      className="hidden lg:flex flex-col red-movilco text-white h-screen sticky top-0 border-r border-red-800/60 shadow-lg z-40 font-sans overflow-hidden"
-      style={{ width: "320px", minWidth: "320px" }}
-    >
-      <div className="flex-1 flex flex-col p-8 ">
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="relative mb-4">
-            <div className="w-24 h-24 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-3xl shadow-inner border border-white/30">
-              {userInfo.name.charAt(0)}
+return (
+  <aside
+    className="
+      hidden lg:flex flex-col red-movilco text-white
+      w-64 xl:w-72 2xl:w-[24%] max-w-sm min-w-[15rem] shrink-0
+      sticky top-0 self-start
+      h-screen
+      border-r border-red-800/60 shadow-lg z-40 font-sans
+    "
+  >
+    <div className="flex flex-col h-full">
+
+      {/* SCROLL INTERNO */}
+      <div className="flex-1 overflow-y-auto movilco-scroll-min">
+        <div className="flex-1 flex flex-col p-8">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="relative mb-4">
+              <div className="w-24 h-24 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-3xl shadow-inner border border-white/30">
+                {userInfo.name.charAt(0)}
+              </div>
+              <div
+                className="absolute bottom-0 right-0 bg-green-400 w-6 h-6 rounded-full border-2 border-red-700 shadow-sm"
+                title="Activo"
+              />
             </div>
-            <div className="absolute bottom-0 right-0 bg-green-400 w-6 h-6 rounded-full border-2 border-red-700 shadow-sm" title="Activo" />
-          </div>
-          <h2 className="text-2xl font-bold leading-tight mb-1 text-white">{userInfo.name}</h2>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 rounded-full border border-white/20 text-white">
-            <Icon name="user" size={14} className="text-white" />
-            <span className="text-xs font-medium tracking-wide uppercase">{userInfo.regional}</span>
-          </div>
-        </div>
 
-        <div className="space-y-4 w-full">
-          {loading && (
-            <div className="text-xs text-white bg-white/10 px-3 py-2 rounded-lg border border-white/10">Cargando perfil...</div>
-          )}
-          {error && (
-            <div className="text-xs text-white bg-red-500/30 px-3 py-2 rounded-lg border border-red-400/40">{error}</div>
-          )}
-          <InfoCard icon="map" label="Distrito" value={userInfo.district} />
+            <h2 className="text-2xl font-bold leading-tight mb-1 text-white">
+              {userInfo.name}
+            </h2>
 
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 rounded-full border border-white/20 text-white">
+              <Icon name="user" size={14} className="text-white" />
+              <span className="text-xs font-medium tracking-wide uppercase">
+                {userInfo.regional}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-4 w-full">
+            {loading && (
+              <div className="text-xs text-white bg-white/10 px-3 py-2 rounded-lg border border-white/10">
+                Cargando perfil...
+              </div>
+            )}
+            {error && (
+              <div className="text-xs text-white bg-red-500/30 px-3 py-2 rounded-lg border border-red-400/40">
+                {error}
+              </div>
+            )}
+
+            <InfoCard icon="map" label="Distrito" value={userInfo.district} />
             <InfoCard icon="cash" label="Presupuesto" value={userInfo.budget} highlight />
 
-          <div className="h-px bg-white/20 my-4 mx-2" />
-          <InfoCard icon="mail" label="Correo" value={userInfo.email} small />
-          <InfoCard icon="phone" label="Telefono" value={userInfo.phone} />
+            <div className="h-px bg-white/20 my-4 mx-2" />
+
+            <InfoCard icon="mail" label="Correo" value={userInfo.email} small />
+            <InfoCard icon="phone" label="Telefono" value={userInfo.phone} />
+          </div>
         </div>
       </div>
 
-      <div className="p-6 red-movilco border-t text-white border-red-800/60">
+      {/* FOOTER FIJO */}
+      <div className="shrink-0 p-6 red-movilco border-t text-white border-red-800/60">
         {asesor.jerarquia === "ASESORIA" && (
           <div className="mb-4">
             <div className="text-[10px] font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -214,7 +239,6 @@ export default function SideBar() {
           </div>
         )}
 
-
         <button
           className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl transition-all border border-white/20 shadow-sm group"
           onClick={handleLogout}
@@ -223,6 +247,9 @@ export default function SideBar() {
           <span className="font-medium text-sm">Cerrar Sesión</span>
         </button>
       </div>
-    </aside>
-  );
+
+    </div>
+  </aside>
+);
+
 }

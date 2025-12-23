@@ -19,6 +19,8 @@ export default function SupervisorSalesPanel({ advisorId, period }) {
   const [pendingSales, setPendingSales] = useState([]);
   const [approvedSales, setApprovedSales] = useState([]);
   const [ciapList, setCiapList] = useState([]);
+  const [exportedIds, setExportedIds] = useState(new Set());
+  const [monthExported, setMonthExported] = useState(false);
 
   const token = getStoredToken();
   const coordinatorId = getStoredUser()?.coordinator_id || getStoredUser()?.id;
@@ -107,6 +109,7 @@ export default function SupervisorSalesPanel({ advisorId, period }) {
 
   const exportSale = async (sale) => {
     if (!sale?.id) return;
+    if (exportedIds.has(sale.id)) return;
     try {
       setLoading(true);
       const res = await fetch(
@@ -115,6 +118,11 @@ export default function SupervisorSalesPanel({ advisorId, period }) {
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || "No se pudo exportar la venta");
+      setExportedIds((prev) => {
+        const next = new Set(prev);
+        next.add(sale.id);
+        return next;
+      });
       await loadApproved();
     } catch (err) {
       console.error(err);
@@ -125,6 +133,7 @@ export default function SupervisorSalesPanel({ advisorId, period }) {
 
   const exportMonth = async () => {
     if (!coordinatorId) return;
+    if (monthExported) return;
     try {
       setLoading(true);
       const res = await fetch(
@@ -133,6 +142,7 @@ export default function SupervisorSalesPanel({ advisorId, period }) {
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || "No se pudo exportar el mes");
+      setMonthExported(true);
       setCiapList((prev) => prev);
     } catch (err) {
       console.error(err);
@@ -185,15 +195,15 @@ export default function SupervisorSalesPanel({ advisorId, period }) {
           data={approvedSales}
           emptyText="No hay ventas aprobadas"
           actions={[
-            { label: "Editar", onClick: editSale },
-            { label: "Exportar CIAP", onClick: exportSale },
-            { label: "Ver" },
+            // { label: "Editar", onClick: editSale },
+            { label: "Exportar CIAP", onClick: exportSale, disabled: (item) => exportedIds.has(item.id) },
+            // { label: "Ver" },
           ]}
         />
       )}
 
       {!loading && activeTab === "ciap" && (
-        <CiapTable data={ciapList} onExportMonth={exportMonth} />
+        <CiapTable data={ciapList} onExportMonth={exportMonth} monthExported={monthExported} />
       )}
     </div>
   );}
@@ -244,15 +254,19 @@ function SalesTable({ data, emptyText, actions }) {
               <td className="text-blue-600">{item.producto}</td>
               <td>{item.estrato}</td>
               <td className="text-right space-x-2">
-                {actions.map(action => (
-                  <button
-                    key={action.label || action}
-                    className="text-xs px-3 py-1 rounded-md border hover:bg-gray-50"
-                    onClick={action.onClick ? () => action.onClick(item) : undefined}
-                  >
-                    {action.label || action}
-                  </button>
-                ))}
+                {actions.map(action => {
+                  const disabled = typeof action.disabled === "function" ? action.disabled(item) : action.disabled;
+                  return (
+                    <button
+                      key={action.label || action}
+                      className={`text-xs px-3 py-1 rounded-md border ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}`}
+                      onClick={disabled ? undefined : action.onClick ? () => action.onClick(item) : undefined}
+                      disabled={disabled}
+                    >
+                      {disabled ? "Exportado" : action.label || action}
+                    </button>
+                  );
+                })}
               </td>
             </tr>
           ))}
@@ -262,17 +276,18 @@ function SalesTable({ data, emptyText, actions }) {
   );
 }
 
-function CiapTable({ data, onExportMonth }) {
+function CiapTable({ data, onExportMonth, monthExported }) {
   if (!data.length) {
     return (
       <div className="text-center py-6 text-gray-500">
         No hay CIAP generados
         <div className="mt-3">
           <button
-            className="text-xs px-3 py-1 rounded-md border hover:bg-gray-50"
-            onClick={onExportMonth}
+            className={`text-xs px-3 py-1 rounded-md border ${monthExported ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}`}
+            onClick={monthExported ? undefined : onExportMonth}
+            disabled={monthExported}
           >
-            Exportar mes a SIAPP
+            {monthExported ? "Mes exportado" : "Exportar mes a SIAPP"}
           </button>
         </div>
       </div>

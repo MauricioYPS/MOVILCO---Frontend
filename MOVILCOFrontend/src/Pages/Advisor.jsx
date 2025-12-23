@@ -380,7 +380,7 @@ export default function Advisors() {
         },
         {
             id: "finContrato",
-            title: "Finalizan Contrato",
+            title: "Finalizaron Contratacion",
             value: counts.finContrato,
             accentColor: "bg-yellow-100",
             statusKey: "fin_contrato",
@@ -397,11 +397,11 @@ export default function Advisors() {
     ]
 
     return (
-        <main className="min-h-screen bg-gray-50 overflow-x-hidden ">
-            <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 md:px-6 lg:px-8">
+        <main className="min-h-screen bg-gray-50 overflow-x-hidden w-full min-w-0">
+            <div className="mx-auto w-full min-w-0 px-3 py-6 sm:px-4 md:px-6 lg:px-4 xl:px-6 lg:max-w-[calc(100vw-18rem)] xl:max-w-[calc(100vw-20rem)] 2xl:max-w-7xl ">
                 <h1 className="mb-6 text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Resumen de Asesores</h1>
 
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 border border-gray-200 rounded-lg">
                     {kpiCards.map((card) => (
                         <AdvisorKpiCard
                             key={card.id}
@@ -414,7 +414,7 @@ export default function Advisors() {
                     ))}
                 </div>
 
-                <section className="mt-10 overflow-hidden rounded-lg bg-white shadow">
+                <section className="mt-10 overflow-hidden rounded-lg bg-white shadow w-full min-w-0">
                     <div className="border-b border-gray-200 p-4 sm:p-6">
                         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-4">
@@ -432,7 +432,7 @@ export default function Advisors() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+                            <div className="flex w-full flex-wrap gap-3 sm:w-auto sm:flex-row sm:items-center ">
                                 <input
                                     type="search"
                                     value={query}

@@ -288,7 +288,7 @@ function SalesTable({ ventas }) {
 
 function InfoRow({ label, value, small }) {
     return (
-        <div className="flex justify-between">
+        <div className="flex justify-between flex-col">
             <span className="text-sm font-medium text-gray-500">{label}</span>
             <span className={`font-semibold text-gray-800 ${small ? "text-sm" : ""}`}>{value}</span>
         </div>

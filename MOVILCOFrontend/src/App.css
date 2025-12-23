@@ -52,3 +52,49 @@
     0%, 100% { transform: rotate(0deg); transform-origin: 160px 110px; }
     50% { transform: rotate(-10deg); transform-origin: 160px 110px; }
 }
+.movilco-scroll-min {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+/* Chrome, Edge, Safari */
+.movilco-scroll-min::-webkit-scrollbar {
+  width: 10px;
+}
+
+.movilco-scroll-min::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.movilco-scroll-min::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.movilco-scroll-min:hover {
+  scrollbar-color: rgba(255,255,255,.28) rgba(0,0,0,.10);
+}
+
+.movilco-scroll-min:hover::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.10);
+  border-radius: 999px;
+}
+
+.movilco-scroll-min:hover::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.22);
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,.12);
+}
+
+.movilco-scroll-min:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,.30);
+}
+
+/* Regional Manager: subir 1 paso tipografía en sm/md */
+@media (max-width: 1023px) {
+  .rm-text-up .text-[10px] { font-size: 0.72rem; }
+  .rm-text-up .text-[11px] { font-size: 0.78rem; }
+  .rm-text-up .text-xs { font-size: 0.875rem; }
+  .rm-text-up .text-sm { font-size: 1rem; }
+  .rm-text-up .text-base { font-size: 1.0625rem; }
+}

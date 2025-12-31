@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { id: "coordinadores", label: "Coordinadores", link: "/Coordinators" },
   { id: "gerentes", label: "Gerentes", link: "/RegionalManager" },
   { id: "recreoCoordinadores", label: "Recreo coordinadores", link: "/WeeklyCoordinatorPage" },
+  { id: "noveltiesRh", label: "Novedades RH", link: "/novedades-rh" },
+  { id: "userManagerRh", label: "Usuarios RH", link: "/usuarios-rh" },
 ];
 
 export default function Navbar() {
@@ -38,19 +40,22 @@ export default function Navbar() {
     .join("") || "U";
 
   const visibleNavItems = useMemo(() => {
+    if (userRole === "ADMIN") {
+      return NAV_ITEMS.filter((item) => ["noveltiesRh", "userManagerRh"].includes(item.id));
+    }
     if (["ASESOR", "ASESORIA", "ASESOR COMERCIAL"].includes(userRole)) {
       return NAV_ITEMS.filter((item) => item.id === "dashboardAsesores");
     }
     if (["COORDINACION", "COORDINADOR COMERCIAL"].includes(userRole)) {
-      return NAV_ITEMS.filter((item) => ["asesores","recreoCoordinadores" ].includes(item.id));
+      return NAV_ITEMS.filter((item) => ["asesores", "recreoCoordinadores"].includes(item.id));
     }
     if (["DIRECCION", "DIRECTOR COMERCIAL"].includes(userRole)) {
-      return NAV_ITEMS.filter((item) => [ "coordinadores"].includes(item.id));
+      return NAV_ITEMS.filter((item) => ["coordinadores"].includes(item.id));
     }
     if (["GERENTE", "GERENCIA", "DIRECTOR", "DIRECTOR REGIONAL"].includes(userRole)) {
-      return NAV_ITEMS.filter((item) => [ "gerentes"].includes(item.id));
+      return NAV_ITEMS.filter((item) => ["gerentes"].includes(item.id));
     }
-    return NAV_ITEMS;
+    return NAV_ITEMS.filter((item) => item.id !== "noveltiesRh" && item.id !== "userManagerRh");
   }, [userRole]);
 
   const handleLogout = async () => {

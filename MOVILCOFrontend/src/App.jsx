@@ -17,6 +17,8 @@ import ProtectedLayout from './Layouts/ProtectedLayout'
 import AdvisorDashboard from './Pages/AdvisorDashboard'
 import EmailSenderPage from './Pages/SendMails'
 import WeeklyCoordinatorPage from './Pages/WeeklyCoordinatorPage'
+import NoveltiesDashboard from './Pages/NoveltiesDashboard'
+import UserManager from './Pages/UserManager'
 
 
 
@@ -36,7 +38,9 @@ const router = createBrowserRouter([
       { path: "/DataWorkflow", element: <DataWorkflow></DataWorkflow>},
       { path: "/AdvisorDashboard", element: <AdvisorDashboard></AdvisorDashboard>},
       { path: "/SendMails", element: <EmailSenderPage></EmailSenderPage> },
-      { path : "/WeeklyCoordinatorPage", element: <WeeklyCoordinatorPage></WeeklyCoordinatorPage>}
+      { path : "/WeeklyCoordinatorPage", element: <WeeklyCoordinatorPage></WeeklyCoordinatorPage>},
+      { path : "/novedades-rh", element: <NoveltiesDashboard></NoveltiesDashboard>},
+      { path : "/usuarios-rh", element: <UserManager></UserManager>}
     ],
   },
   { path: "/SignIn", element: <AuthPage></AuthPage> },

@@ -8,6 +8,7 @@ import coordAdvisorsReducer from "./reducers/coordAdvisorsReducers";
 import advisorSalesReducer from "./reducers/advisorSalesSlice";
 import advisorInfoReducer from "./reducers/advisorInfoSlice";
 import advisorCiapReducer from "./reducers/advisorCiapSlice";
+import noveltiesReducer from "./reducers/noveltiesSlice";
 
 
 const store = configureStore({
@@ -21,6 +22,7 @@ const store = configureStore({
     advisorSales: advisorSalesReducer,
     advisorInfo: advisorInfoReducer,
     advisorCiap: advisorCiapReducer,
+    novelties: noveltiesReducer,
   },
 });
 

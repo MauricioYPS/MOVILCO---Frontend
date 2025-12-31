@@ -42,6 +42,9 @@ const Login = ({ withLayout = true }) => {
           case 'GERENCIA':
             navigate('/RegionalManager');
             break;
+          case 'ADMIN':
+            navigate('/novedades-rh');
+            break;
 
           default:
         }

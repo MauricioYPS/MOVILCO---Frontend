@@ -319,9 +319,9 @@ const NoveltyManager = () => {
           </nav>
         </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-md text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all flex items-center gap-2 shadow-sm">
+          {/* <button className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-md text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all flex items-center gap-2 shadow-sm">
             <Download size={16} /> Exportar Reporte
-          </button>
+          </button> */}
           <button
             onClick={openCreateModal}
             disabled={!isAuthorized}

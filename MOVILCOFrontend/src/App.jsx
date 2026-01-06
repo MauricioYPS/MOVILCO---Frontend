@@ -19,6 +19,8 @@ import EmailSenderPage from './Pages/SendMails'
 import WeeklyCoordinatorPage from './Pages/WeeklyCoordinatorPage'
 import NoveltiesDashboard from './Pages/NoveltiesDashboard'
 import UserManager from './Pages/UserManager'
+import BudgetsRH from './Pages/BudgetsRH'
+import ManualDaysManager from './Pages/ManualDaysManager'
 
 
 
@@ -40,7 +42,9 @@ const router = createBrowserRouter([
       { path: "/SendMails", element: <EmailSenderPage></EmailSenderPage> },
       { path : "/WeeklyCoordinatorPage", element: <WeeklyCoordinatorPage></WeeklyCoordinatorPage>},
       { path : "/novedades-rh", element: <NoveltiesDashboard></NoveltiesDashboard>},
-      { path : "/usuarios-rh", element: <UserManager></UserManager>}
+      { path : "/usuarios-rh", element: <UserManager></UserManager>},
+      { path : "/presupuesto-rh", element: <BudgetsRH></BudgetsRH>},
+      { path : "/manual-days-rh", element: <ManualDaysManager></ManualDaysManager>}
     ],
   },
   { path: "/SignIn", element: <AuthPage></AuthPage> },

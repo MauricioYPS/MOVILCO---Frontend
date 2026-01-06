@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { Plus, Download, AlertCircle, ChevronRight } from "lucide-react"
+import { Plus, AlertCircle, ChevronRight } from "lucide-react"
 import useAuthSession from "../hooks/useAuthSession"
-import Badge from "../components/novelties/common/Badge"
 import FilterToolbar from "../components/novelties/FilterToolbar"
 import RecentPanel from "../components/novelties/RecentPanel"
 import DataTable from "../components/novelties/DataTable"
@@ -88,19 +87,8 @@ const mapOverlap = (overlaps = []) =>
 const NoveltyManager = () => {
   const dispatch = useDispatch()
   const { role } = useAuthSession()
-  const {
-    list,
-    recent,
-    total,
-    limit,
-    offset,
-    filters,
-    listLoading,
-    recentLoading,
-    mutationLoading,
-    error,
-    detail
-  } = useSelector(selectNovelties)
+  const { list, recent, total, limit, offset, filters, listLoading, recentLoading, mutationLoading, error, detail } =
+    useSelector(selectNovelties)
 
   const [modalType, setModalType] = useState(null)
   const [selectedNovelty, setSelectedNovelty] = useState(null)
@@ -226,6 +214,7 @@ const NoveltyManager = () => {
       setFormError("Debes ingresar un identificador")
       return
     }
+
     const payload = {
       novelty_type: formData.novelty_type,
       start_date: formData.start_date,
@@ -251,6 +240,7 @@ const NoveltyManager = () => {
     if (!selectedNovelty?.id) return
     setFormError("")
     setConflictError(null)
+
     if (!formData.start_date || !formData.end_date) {
       setFormError("Inicio y fin son obligatorios")
       return
@@ -259,6 +249,7 @@ const NoveltyManager = () => {
       setFormError("La fecha fin debe ser mayor o igual al inicio")
       return
     }
+
     const payload = {
       novelty_type: formData.novelty_type,
       start_date: formData.start_date,
@@ -302,48 +293,46 @@ const NoveltyManager = () => {
 
   const recentMapped = useMemo(() => recent.map(mapRecentItem), [recent])
   const listMapped = useMemo(() => list.map(mapNoveltyItem), [list])
+
   const fromRecord = total === 0 ? 0 : offset + 1
   const toRecord = Math.min(offset + limit, total)
-
   const detailData = detail?.data ? mapNoveltyItem(detail.data) : selectedNovelty
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-800 p-6 lg:p-10 min-w-full">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-200 pb-6">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-800 p-4 sm:p-6 lg:p-10 min-w-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Gestion de Novedades</h1>
-          <nav className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+          <h1 className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight">Gestion de Novedades</h1>
+          <nav className="flex items-center gap-2 text-sm text-slate-500 mt-1">
             <span>Recursos Humanos</span>
-            <ChevronRight size={12} />
+            <ChevronRight size={14} />
             <span className="font-semibold text-red-700">Control de Ausentismos</span>
           </nav>
         </div>
-        <div className="flex gap-3">
-          {/* <button className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-md text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all flex items-center gap-2 shadow-sm">
-            <Download size={16} /> Exportar Reporte
-          </button> */}
+
+        <div className="flex gap-3 w-full md:w-auto">
           <button
             onClick={openCreateModal}
             disabled={!isAuthorized}
-            className="px-4 py-2 bg-red-700 text-white rounded-md text-sm font-semibold hover:bg-red-800 transition-all flex items-center gap-2 shadow-sm shadow-red-200 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full md:w-auto px-4 py-2.5 bg-red-700 text-white rounded-md text-sm font-semibold hover:bg-red-800 transition-all flex items-center justify-center gap-2 shadow-sm shadow-red-200 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Plus size={16} /> Registrar Novedad
+            <Plus size={18} /> Registrar Novedad
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        <div className="xl:col-span-1 space-y-6">
+      {/* REORGANIZACIÓN:
+         - RecentPanel ahora va arriba (full width) para no quitar ancho al DataTable.
+         - Abajo queda el bloque filtros + tabla aprovechando el 100% del ancho. */}
+      <div className="space-y-5">
+        <div className="lg:w-2/5 w-full mb-4">
           <RecentPanel loading={recentLoading} items={recentMapped} onRefresh={() => dispatch(fetchRecentNovelties())} />
         </div>
 
-        <div className="xl:col-span-3 space-y-4">
+        <div className="space-y-4">
           <FilterToolbar listLoading={listLoading} onApply={applyFilters} initialFilters={filters} />
-          {error && (
-            <div className="bg-red-50 border border-red-100 text-red-700 text-xs rounded-md px-3 py-2">
-              {error}
-            </div>
-          )}
+
+          {error && <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-md px-3 py-2">{error}</div>}
 
           <DataTable
             listLoading={listLoading}

@@ -32,7 +32,12 @@ const formatPeriodLabel = (period) => {
     return label && year ? `${label} ${year}` : "Periodo no definido";
 };
 
-const formatPeriodForApi = (value) => value?.replace(/-0?(\d{1,2})$/, "-$1");
+const formatPeriodForApi = (value) => {
+    const [year, month] = (value || "").split("-");
+    if (!year || !month) return value;
+    const paddedMonth = String(month).padStart(2, "0");
+    return `${year}-${paddedMonth}`;
+};
 
 export default function AdvisorDetails({ onBack }) {
     const { id: idParam } = useParams();

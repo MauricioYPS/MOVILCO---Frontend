@@ -1,657 +1,829 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react"
-import axios from "axios"
-import { useDispatch, useSelector } from "react-redux"
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  LayoutDashboard,
-  Plus,
-  Bell,
-  DollarSign,
-  Smartphone,
-  Menu,
-  X,
-  LogOut,
-  FileText,
-  CheckCircle2,
-  Clock,
   AlertTriangle,
-  ChevronRight,
+  Calendar,
+  Globe,
+  Hash,
+  Loader2,
   MessageSquare,
-  Zap,
-  HelpCircle,
-  FileWarning,
+  Monitor,
+  Search,
+  Smartphone,
   Wifi,
-  Monitor
-} from "lucide-react"
-import useAuthSession from "../hooks/useAuthSession"
-import { loadAdvisorInfo, loadAdvisorKpi, selectAdvisorInfo } from "../../store/reducers/advisorInfoSlice"
-import {
-  loadApprovedSales,
-  loadPendingSales,
-  loadRejectedSales,
-  registerSale,
-  selectAdvisorSales
-} from "../../store/reducers/advisorSalesSlice"
-import {selectAdvisorCiap } from "../../store/reducers/advisorCiapSlice"
+  X,
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  User,
+  MapPin,
+  Briefcase,
+  DollarSign,
+  Phone,
+  Mail,
+  Building2
+} from "lucide-react";
+import useAuthSession from "../hooks/useAuthSession";
+import { api } from "../../store/api";
 
-const SERVICE_STYLES = {
-  internet: { classes: "bg-blue-100 text-blue-700", icon: <Wifi size={16} /> },
-  movil: { classes: "bg-purple-100 text-purple-700", icon: <Smartphone size={16} /> },
-  tv: { classes: "bg-pink-100 text-pink-700", icon: <Monitor size={16} /> },
-  default: { classes: "bg-slate-100 text-slate-700", icon: <FileText size={16} /> }
-}
+const pad2 = (v) => String(v).padStart(2, "0");
+const parseNumber = (val, fallback = 0) => {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+};
 
-const STATUS_CONFIG = {
-  aprobada: { bg: "bg-emerald-100", text: "text-emerald-800", border: "border-emerald-200", icon: <CheckCircle2 size={12} /> },
-  pendiente: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", icon: <Clock size={12} /> },
-  rechazada: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: <AlertTriangle size={12} /> },
-  revision: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", icon: <FileWarning size={12} /> }
-}
+const formatPeriodLabel = (period) => {
+  const [y, m] = (period || "").split("-");
+  if (!y || !m) return period || "Periodo";
+  const monthName = new Date(Number(y), Number(m) - 1, 1).toLocaleString("es-CO", { month: "long" });
+  return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${y}`;
+};
 
-const MONTHLY_GOAL_DEFAULT = 13
-
-const formatCurrency = (value) => {
-  if (Number.isNaN(Number(value))) return "$ 0"
-  return `$ ${Number(value).toLocaleString("es-CO")}`
-}
-
-const adaptNotification = (raw) => ({
-  id: raw?.id ?? crypto.randomUUID?.() ?? String(Date.now()),
-  title: raw?.title ?? raw?.titulo ?? "Notificacion",
-  type: raw?.type ?? raw?.tipo ?? "info",
-  msg: raw?.msg ?? raw?.mensaje ?? "",
-  time: raw?.time ?? raw?.hora ?? ""
-})
-
-const computeKpiFallback = (sales, monthlyGoal = MONTHLY_GOAL_DEFAULT) => {
-  const approved = sales.filter((s) => s.estado === "aprobada").length
-  const pending = sales.filter((s) => s.estado === "pendiente").length
-  const rejected = sales.filter((s) => s.estado === "rechazada").length
-  const projectedCommission = sales.reduce((acc, s) => acc + (s.estado === "aprobada" ? s.monto ?? 0 : 0), 0)
-
-  return {
-    monthlyGoal,
-    approvedSales: approved,
-    pendingSales: pending,
-    rejectedSales: rejected,
-    projectedCommission,
-    gapToBonus: Math.max(monthlyGoal - approved, 0)
+const formatDate = (iso) => {
+  if (!iso) return "N/D";
+  try {
+    return new Date(iso).toLocaleDateString("es-CO", { year: "numeric", month: "2-digit", day: "2-digit" });
+  } catch {
+    return String(iso);
   }
-}
+};
 
-const ServiceIcon = ({ type }) => {
-  const cfg = SERVICE_STYLES[type] || SERVICE_STYLES.default
-  return <div className={`p-2 rounded-lg ${cfg.classes} shadow-sm`}>{cfg.icon}</div>
-}
+const ServiceIcon = ({ line }) => {
+  const value = String(line || "").toUpperCase();
+  if (value.includes("MOVIL")) return <Smartphone className="text-purple-600" size={18} />;
+  if (value.includes("TV") || value.includes("VIDEO")) return <Monitor className="text-pink-600" size={18} />;
+  return <Wifi className="text-blue-600" size={18} />;
+};
 
-const StatusPill = ({ status }) => {
-  const style = STATUS_CONFIG[status?.toLowerCase()] || STATUS_CONFIG.pendiente
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border ${style.bg} ${style.text} ${style.border}`}>
-      {style.icon} {status}
-    </span>
-  )
-}
-
-const ProgressBar = ({ value, max, colorClass = "bg-red-600" }) => {
-  const percentage = Math.min((value / max) * 100, 100)
-  return (
-    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-      <div className={`h-full rounded-full transition-all duration-700 ${colorClass}`} style={{ width: `${percentage}%` }} />
-    </div>
-  )
-}
-
-const SalesList = ({ sales, onSelect, filterType, setFilterType }) => (
-  <div className="space-y-4">
-    <div className="flex items-center justify-between flex-wrap">
-      <h3 className="font-bold text-slate-800 text-lg ">Gestiones Recientes</h3>
-      <div className="flex bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
-        {["all", "pendiente", "aprobada", "rechazada"].map((type) => (
-          <button
-            key={type}
-            onClick={() => setFilterType(type)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${
-              filterType === type ? "bg-slate-800 text-white" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-            }`}
-          >
-            {type === "all" ? "Todas" : type}
-          </button>
-        ))}
+const Modal = ({ title, onClose, children, footer }) => (
+  <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-slate-100 flex flex-col">
+      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="font-bold text-lg text-slate-900">{title}</div>
+        <button onClick={onClose} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-full">
+          <X size={18} />
+        </button>
       </div>
-    </div>
-
-    <div className="space-y-3">
-      {sales.map((sale) => (
-        <div
-          key={sale.id}
-          className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-center justify-between gap-4"
-        >
-          <div className="flex items-center gap-4 w-full sm:w-auto">
-            <ServiceIcon type={sale.type} />
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="font-bold text-slate-800">{sale.cliente}</h4>
-                <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 font-mono">{sale.id}</span>
-              </div>
-              <p className="text-xs text-gray-500 font-medium">{sale.producto}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="text-right hidden sm:block">
-              <span className="block text-xs font-bold text-slate-700">{formatCurrency(sale.monto)}</span>
-              <span className="block text-[10px] text-gray-400">{sale.fecha}</span>
-            </div>
-            <StatusPill status={sale.estado} />
-            <button
-              onClick={() => onSelect(sale.id)}
-              className="p-2 text-gray-400 hover:text-[#C62828] hover:bg-red-50 rounded-full transition-colors"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div>
-      ))}
+      <div className="flex-1 overflow-y-auto p-6 bg-slate-50/60">{children}</div>
+      {footer ? <div className="px-6 py-4 border-t border-slate-100 bg-white">{footer}</div> : null}
     </div>
   </div>
-)
+);
 
-export default function AdvisorDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [showNewSaleModal, setShowNewSaleModal] = useState(false)
-  const [filterType, setFilterType] = useState("all")
-  const [saleForm, setSaleForm] = useState({
-    fecha: new Date().toISOString().slice(0, 10),
-    estado_liquidacion: "PENDIENTE",
-    linea_negocio: "HOGAR",
-    cuenta: "",
-    ot: "",
-    idasesor: "",
-    nombreasesor: "",
-    cantserv: "1",
-    tipored: "FTTH",
-    division: "",
-    area: "",
-    zona: "",
-    poblacion: "",
-    d_distrito: "",
-    renta: "80000",
-    venta: "1",
-    tipo_registro: "VENTA",
-    estrato: "3",
-    paquete_pvd: "",
-    mintic: "NO",
-    tipo_producto: "INTERNET FIJO",
-    venta_convergente: "NO",
-    venta_instale_dth: "",
-    sac_final: "",
-    cedula_vendedor: "",
-    nombre_vendedor: "",
-    modalidad_venta: "",
-    tipo_vendedor: "ASESOR COMERCIAL FIJO",
-    tipo_red_comercial: "",
-    nombre_regional: "",
-    nombre_comercial: "",
-    nombre_lider: "",
-    retencion_control: "",
-    observ_retencion: "",
-    tipo_contrato: "DOBLE",
-    tarifa_venta: "0",
-    comision_neta: "80000",
-    punto_equilibrio: "0"
-  })
+const PeriodSelector = ({ period, onChange }) => (
+  <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+      <Calendar size={16} className="text-[#C62828]" />
+      <span className="text-sm font-semibold text-slate-700">{formatPeriodLabel(period)}</span>
+    </div>
+    <input
+      type="month"
+      value={period}
+      onChange={(e) => {
+        const now = new Date();
+        const current = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
+        const val = e.target.value || current;
+        onChange(val);
+      }}
+      className="border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-red-200 bg-white"
+    />
+  </div>
+);
 
-  const dispatch = useDispatch()
-  const { token, user } = useAuthSession()
-  const salesState = useSelector(selectAdvisorSales)
-  const infoState = useSelector(selectAdvisorInfo)
-  const ciapState = useSelector(selectAdvisorCiap)
+const KpiCard = ({ title, value, subtitle, tone = "slate" }) => {
+  const toneClasses =
+    tone === "red"
+      ? "bg-white border-red-100"
+      : tone === "green"
+      ? "bg-white border-emerald-100"
+      : "bg-white border-slate-200";
+  return (
+    <div className={`rounded-2xl border ${toneClasses} shadow-sm p-4`}>
+      <div className="text-sm font-semibold text-slate-500">{title}</div>
+      <div className="mt-1 text-2xl font-extrabold text-slate-900">{value}</div>
+      {subtitle ? <div className="mt-1 text-sm text-slate-600">{subtitle}</div> : null}
+    </div>
+  );
+};
 
-  const advisorId = infoState.advisor?.id || user?.id
-  const advisorDocument =
-    infoState.advisor?.document || user?.document_id || user?.documento || user?.cedula || user?.document || ""
-  const coordinatorId =
-    infoState.advisor?.coordinator_id ||
-    user?.coordinator_id ||
-    user?.coordinatorId ||
-    user?.coordinator ||
-    user?.coordinador_id ||
-    null
-
-  const advisorName = infoState.advisor?.name || user?.name || "Asesor Movilco"
-  const advisorCargo = infoState.advisor?.cargo || user?.cargo || user?.role || "Asesor Comercial"
-
-  const sales = useMemo(
-    () => [
-      ...(salesState.pending || []),
-      ...(salesState.approved || []),
-      ...(salesState.rejected || [])
-    ],
-    [salesState.pending, salesState.approved, salesState.rejected]
-  )
-
-  const notifications = useMemo(
-    () =>
-      (salesState.rejected || []).map((sale) =>
-        adaptNotification({
-          id: sale.id,
-          title: "Correccion requerida",
-          type: "error",
-          msg: sale.observaciones || "Venta rechazada, revise los documentos.",
-          time: sale.fecha || ""
-        })
-      ),
-    [salesState.rejected]
-  )
-
-  const filteredSales = useMemo(
-    () => (filterType === "all" ? sales : sales.filter((s) => s.estado?.toLowerCase() === filterType)),
-    [sales, filterType]
-  )
-
-  const kpiData = useMemo(() => {
-    if (infoState.kpi) {
-      const k = infoState.kpi
-      return {
-        monthlyGoal: k.prorrateo || MONTHLY_GOAL_DEFAULT,
-        approvedSales: k.ventas || salesState.approved?.length || 0,
-        pendingSales: salesState.pending?.length || 0,
-        rejectedSales: salesState.rejected?.length || 0,
-        projectedCommission: (k.ventas || salesState.approved?.length || 0) * 0.1,
-        gapToBonus: Math.max((k.prorrateo || MONTHLY_GOAL_DEFAULT) - (k.ventas || salesState.approved?.length || 0), 0)
-      }
-    }
-    return computeKpiFallback(sales, MONTHLY_GOAL_DEFAULT)
-  }, [infoState.kpi, sales, salesState.pending?.length, salesState.rejected?.length, salesState.approved?.length])
-
-  const loadAll = useCallback(() => {
-    if (!advisorId) return
-    if (token) {
-      axios.defaults.headers.common.Authorization = `Bearer ${token}`
-    }
-    dispatch(loadAdvisorInfo(advisorId))
-    dispatch(loadAdvisorKpi({ documento: advisorDocument, period: new Date().toISOString().slice(0, 7) }))
-    dispatch(loadPendingSales(coordinatorId || advisorId))
-    dispatch(loadApprovedSales(coordinatorId || advisorId))
-    dispatch(loadRejectedSales(coordinatorId || advisorId))
-  }, [advisorDocument, advisorId, coordinatorId, dispatch, token])
-
-  useEffect(() => {
-    loadAll()
-  }, [loadAll])
-
-  const handleNewSaleSubmit = async () => {
-    const payload = {
-      ...saleForm,
-      asesor_id: advisorId,
-      coordinator_id: coordinatorId,
-      idasesor: saleForm.idasesor || advisorDocument,
-      nombreasesor: saleForm.nombreasesor || user?.name || "",
-      cedula_vendedor: saleForm.cedula_vendedor || advisorDocument,
-      nombre_vendedor: saleForm.nombre_vendedor || user?.name || "",
-      fecha: saleForm.fecha || new Date().toISOString().slice(0, 10),
-      estado_liquidacion: saleForm.estado_liquidacion || "PENDIENTE",
-      estado_revision: saleForm.estado_revision || "pendiente",
-      linea_negocio: saleForm.linea_negocio || "HOGAR",
-      mintic: saleForm.mintic || "NO",
-      venta_convergente: saleForm.venta_convergente || "NO",
-      tipo_vendedor: saleForm.tipo_vendedor || "ASESOR COMERCIAL FIJO",
-      tipo_producto: saleForm.tipo_producto || "INTERNET FIJO",
-      tipo_contrato: saleForm.tipo_contrato || "DOBLE"
-    }
-    await dispatch(registerSale(payload))
-    setShowNewSaleModal(false)
-    loadAll()
-  }
-
-
-
-  const handleInputChange = (field, value) => {
-    setSaleForm((prev) => ({ ...prev, [field]: value }))
-  }
+/** Mini-card de progreso para móvil (mosaico) */
+const ProgressMiniCard = ({ total, presupuesto, advisorName, advisorDistrict }) => {
+  const pct = presupuesto > 0 ? Math.min(100, (total / presupuesto) * 100) : 0;
+  const faltan = presupuesto > 0 ? Math.max(0, presupuesto - total) : 0;
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+      <div className="text-sm font-semibold text-slate-500">Progreso</div>
+      <div className="mt-1 text-2xl font-extrabold text-slate-900">
+        {total}
+        {presupuesto > 0 ? <span className="text-slate-400"> / {presupuesto}</span> : null}
+      </div>
+      <div className="mt-2 w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+        <div className="h-full bg-[#C62828] transition-all duration-500" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-2 text-sm text-slate-500">
+        {presupuesto > 0 ? `${faltan} ventas para meta` : "Sin meta definida"}
+      </div>
+      <div className="mt-2 text-xs text-slate-500 truncate">
+        {advisorName} · {advisorDistrict}
+      </div>
+    </div>
+  );
+};
 
+const DataField = ({ icon: Icon, label, value, highlight = false }) => (
+  <div className={`flex flex-col p-2.5 rounded-lg border ${highlight ? "bg-red-50 border-red-100" : "bg-slate-50 border-slate-100"}`}>
+    <div className="flex items-center gap-1.5 mb-1">
+      <Icon size={12} className={highlight ? "text-[#C62828]" : "text-slate-400"} />
+      <span className={`text-[10px] font-bold uppercase tracking-wider ${highlight ? "text-red-700" : "text-slate-500"}`}>{label}</span>
+    </div>
+    <span className={`text-xs font-semibold truncate ${highlight ? "text-red-900" : "text-slate-800"}`}>{value || "N/A"}</span>
+  </div>
+);
 
+const MobileProfileInfo = ({ data }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const asesor = data?.asesor || {};
+  const coordinador = data?.coordinador || {};
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header className="bg-white   h-16 flex items-center justify-between px-6 lg:px-8 z-10">
-          <div className="flex items-center gap-4">
+  const getInitials = (name) => (name ? name.substring(0, 2).toUpperCase() : "US");
+  const formatName = (name) => {
+    if (!name) return "Usuario";
+    return name
+      .toLowerCase()
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  };
 
-            <h1 className="text-xl font-bold text-slate-800">Panel del Asesor</h1>
+  return (
+    <div className="block lg:hidden w-full mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300">
+        <button
+          onClick={() => setIsOpen((v) => !v)}
+          className="w-full flex items-center justify-between p-4 bg-white active:bg-slate-50 transition-colors focus:outline-none"
+        >
+          <div className="flex items-center gap-3 text-left overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-[#C62828] text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0 border-2 border-red-50">
+              {getInitials(asesor.name)}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-md font-bold text-slate-800 truncate leading-tight">{formatName(asesor.name)}</h2>
+              <p className="text-sm text-slate-500 font-medium truncate flex items-center gap-1">{asesor.cargo || "Asesor Comercial"}</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex flex-col items-end mr-2">
-              <span className="text-xs font-bold text-slate-500 uppercase">Hoy</span>
-              <span className="text-sm font-bold text-slate-800">{new Date().toLocaleDateString("es-CO")}</span>
-              
-            </div>
-            <button className="relative p-2 text-gray-400 hover:text-[#C62828] transition-colors">
-              <Bell size={24} />
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full" />
-            </button>
+          <div className={`p-1.5 rounded-full bg-slate-50 text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180 bg-red-50 text-red-600" : ""}`}>
+            {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </div>
-        </header>
+        </button>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50">
-            
-          <div className="max-w-7xl mx-auto space-y-6">
-            {/* {(salesState.error || infoState.error || ciapState.error) && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-lg">
-                {salesState.error || infoState.error || ciapState.error}
-              </div>
-            )} */}
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              <div className="md:col-span-8 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#868686]" />
-                <div className="flex-1 w-full">
-                  <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Meta Mensual</h2>
-                  <div className="flex items-end gap-3 mb-2">
-                    <span className="text-4xl font-extrabold text-slate-900">
-                      {Math.round((kpiData.approvedSales / (kpiData.monthlyGoal || 1)) * 100)}%
-                    </span>
-                    <span className="text-sm font-medium text-gray-400 mb-1.5">/ 100%</span>
-                  </div>
-                  <ProgressBar value={kpiData.approvedSales} max={kpiData.monthlyGoal} colorClass="bg-gradient-to-r from-red-500 to-red-700" />
-                  <p className="mt-3 text-sm font-medium text-slate-600 flex items-center gap-2">
-                    <Zap size={16} className="text-amber-500 fill-amber-500" />
-                    Te faltan <span className="font-bold text-[#C62828]">{kpiData.gapToBonus} conexiones</span> para el bono.
-                  </p>
-                </div>
-
-                <div className="flex gap-4 sm:border-l sm:border-gray-100 sm:pl-6">
-                  <div className="text-center">
-                    <span className="block text-2xl font-bold text-emerald-600">{kpiData.approvedSales}</span>
-                    <span className="text-xs font-bold text-gray-400 uppercase">Aprobadas</span>
-                  </div>
-                  <div className="text-center">
-                    <span className="block text-2xl font-bold text-amber-500">{kpiData.pendingSales}</span>
-                    <span className="text-xs font-bold text-gray-400 uppercase">Pendientes</span>
-                  </div>
-                  <div className="text-center">
-                    <span className="block text-2xl font-bold text-red-500">{kpiData.rejectedSales}</span>
-                    <span className="text-xs font-bold text-gray-400 uppercase">Rechazos</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="md:col-span-4 grid grid-rows-2 gap-4">
-                <button
-                  onClick={() => setShowNewSaleModal(true)}
-                  className="bg-[#C62828] hover:bg-red-800 text-white rounded-xl p-4 shadow-md flex items-center justify-between transition-all group"
-                >
-                  <div className="text-left">
-                    <span className="block font-bold text-lg">Registrar Venta</span>
-                    <span className="text-red-100 text-xs">Nueva solicitud</span>
-                  </div>
-                  <div className="bg-white/20 p-2 rounded-full group-hover:scale-110 transition-transform">
-                    <Plus size={24} />
-                  </div>
-                </button>
-
-                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="block text-xs font-bold text-gray-400 uppercase">Comision Estimada</span>
-                    <span className="block font-bold text-xl text-slate-800">{formatCurrency(kpiData.projectedCommission)}</span>
-                  </div>
-                  <div className="bg-emerald-50 p-2.5 rounded-full text-emerald-600">
-                    <DollarSign size={20} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
+        {isOpen && (
+          <div className="border-t border-slate-100 bg-white px-4 pb-5 pt-2 animate-in slide-in-from-top-2">
+            <div className="space-y-6">
               <div>
-                <h3 className="font-bold text-slate-800 text-lg">CIAP</h3>
-                <p className="text-xs text-gray-500">Solicita CIAP del periodo actual</p>
-              </div>
-
-            </div>
-            {ciapState.loading && <p className="text-xs text-gray-500">Cargando CIAP...</p>}
-            {ciapState.records && ciapState.records.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                <div className="text-sm font-bold mb-2">Ventas CIAP</div>
-                <ul className="divide-y divide-gray-100">
-                  {ciapState.records.map((item) => (
-                    <li key={`${item.cuenta}-${item.ot}`} className="py-2 text-sm text-gray-700 flex justify-between">
-                      <span>{item.producto}</span>
-                      <span className="text-xs text-gray-500">{item.estado}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2 space-y-4">
-                <SalesList sales={filteredSales} onSelect={() => {}} filterType={filterType} setFilterType={setFilterType} />
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                  <Bell size={18} className="text-slate-400" /> Novedades
+                <h3 className="text-sm font-extrabold text-slate-400 uppercase tracking-widest mb-3 pl-1 flex items-center gap-2">
+                  <User size={12} /> Mis Datos Corporativos
                 </h3>
-
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center">
-                    <span className="text-xs font-bold text-gray-500 uppercase">Mensajes del Coordinador</span>
-                    <span className="text-xs text-blue-600 font-bold hover:underline cursor-pointer">Ver todos</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="col-span-2">
+                    <DataField icon={User} label="Nombre Completo" value={asesor.name} />
                   </div>
-                  <div className="divide-y divide-gray-100">
-                    {notifications.map((notif) => (
-                      <div key={notif.id} className="p-4 hover:bg-slate-50 transition-colors cursor-pointer relative">
-                        {notif.type === "error" && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />}
-                        {notif.type === "info" && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />}
-
-                        <div className="flex justify-between items-start mb-1">
-                          <h5 className={`text-xs font-bold ${notif.type === "error" ? "text-red-600" : "text-blue-600"}`}>{notif.title}</h5>
-                          <span className="text-[10px] text-gray-400">{notif.time}</span>
-                        </div>
-                        <p className="text-xs text-gray-600 leading-snug">{notif.msg}</p>
-                      </div>
-                    ))}
-                  </div>
-
-
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {showNewSaleModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-              <div className="bg-[#C62828] p-4 flex justify-between items-center text-white shrink-0">
-                <h3 className="font-bold text-lg">Registrar Venta</h3>
-                <button onClick={() => setShowNewSaleModal(false)} className="hover:bg-white/20 p-1 rounded transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="p-6 overflow-y-auto space-y-4 flex-1">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Datos del Cliente</label>
-                  <input
-                    type="text"
-                    placeholder="Cuenta"
-                    value={saleForm.cuenta}
-                    onChange={(e) => handleInputChange("cuenta", e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none mb-3"
-                  />
-                  <input
-                    type="text"
-                    placeholder="OT"
-                    value={saleForm.ot}
-                    onChange={(e) => handleInputChange("ot", e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none mb-3"
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Cant. servicios"
-                      value={saleForm.cantserv}
-                      onChange={(e) => handleInputChange("cantserv", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Tipo red (FTTH, HFC...)"
-                      value={saleForm.tipored}
-                      onChange={(e) => handleInputChange("tipored", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
+                  <DataField icon={Mail} label="Email" value={asesor.email} />
+                  <DataField icon={Phone} label="Teléfono" value={asesor.phone} />
+                  <DataField icon={MapPin} label="Distrito" value={asesor.district_claro} />
+                  <DataField icon={Building2} label="Regional" value={asesor.regional} />
+                  <div className="col-span-2">
+                    <DataField
+                      icon={DollarSign}
+                      label="Presupuesto Asignado"
+                      value={`${asesor.presupuesto || 0} Conexiones`}
+                      highlight={true}
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Servicio e Instalacion</label>
-                  <input
-                    type="text"
-                    placeholder="Producto"
-                    value={saleForm.paquete_pvd}
-                    onChange={(e) => handleInputChange("paquete_pvd", e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none mb-3"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Direccion de Instalacion"
-                    value={saleForm.direccion_instalacion}
-                    onChange={(e) => handleInputChange("direccion_instalacion", e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                  />
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <input
-                      type="text"
-                      placeholder="Division"
-                      value={saleForm.division}
-                      onChange={(e) => handleInputChange("division", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Area"
-                      value={saleForm.area}
-                      onChange={(e) => handleInputChange("area", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <input
-                      type="text"
-                      placeholder="Zona"
-                      value={saleForm.zona}
-                      onChange={(e) => handleInputChange("zona", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Poblacion"
-                      value={saleForm.poblacion}
-                      onChange={(e) => handleInputChange("poblacion", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <input
-                      type="text"
-                      placeholder="Distrito"
-                      value={saleForm.d_distrito}
-                      onChange={(e) => handleInputChange("d_distrito", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Estrato"
-                      value={saleForm.estrato}
-                      onChange={(e) => handleInputChange("estrato", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <input
-                      type="text"
-                      placeholder="Tipo producto"
-                      value={saleForm.tipo_producto}
-                      onChange={(e) => handleInputChange("tipo_producto", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Tipo contrato"
-                      value={saleForm.tipo_contrato}
-                      onChange={(e) => handleInputChange("tipo_contrato", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <input
-                      type="text"
-                      placeholder="Modalidad venta"
-                      value={saleForm.modalidad_venta}
-                      onChange={(e) => handleInputChange("modalidad_venta", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Tipo registro"
-                      value={saleForm.tipo_registro}
-                      onChange={(e) => handleInputChange("tipo_registro", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <input
-                      type="text"
-                      placeholder="Renta"
-                      value={saleForm.renta}
-                      onChange={(e) => handleInputChange("renta", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Venta"
-                      value={saleForm.venta}
-                      onChange={(e) => handleInputChange("venta", e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Observaciones</label>
-                  <textarea
-                    rows="2"
-                    placeholder="Detalles adicionales..."
-                    value={saleForm.observ_retencion || ""}
-                    onChange={(e) => handleInputChange("observ_retencion", e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none"
-                  />
                 </div>
               </div>
 
-              <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-3 shrink-0">
-                <button
-                  onClick={() => setShowNewSaleModal(false)}
-                  className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleNewSaleSubmit}
-                  className="flex-1 py-3 text-sm font-bold text-white bg-[#C62828] hover:bg-red-800 rounded-lg shadow-md transition-all transform active:scale-95"
-                >
-                  Guardar Venta
-                </button>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-400 uppercase tracking-widest mb-3 pl-1 flex items-center gap-2">
+                  <Briefcase size={12} /> Información de mi Supervisor
+                </h3>
+                <div className="bg-slate-50/50 rounded-xl border border-slate-100 p-3">
+                  <div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-100">
+                    <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm">
+                      {getInitials(coordinador.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{coordinador.name || "No asignado"}</p>
+                      <p className="text-sm text-slate-500 truncate">{coordinador.cargo}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 text-sm text-slate-700">
+                    <div className="flex items-center gap-2">
+                      <Mail size={12} className="text-slate-400" />
+                      <span className="truncate">{coordinador.email || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone size={12} className="text-slate-400" />
+                      <span>{coordinador.phone || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin size={12} className="text-slate-400" />
+                      <span className="truncate">{coordinador.district || "N/A"}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
     </div>
-  )
+  );
+};
+
+const SalesTable = ({ sales, loading, searchTerm, onSearch, onSelect }) => (
+  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+    <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div>
+        <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+          <Zap size={18} className="text-[#C62828]" />
+          Ventas del periodo
+        </h3>
+        <p className="text-sm text-slate-500">Listado SIAPP asociado a tu cédula.</p>
+      </div>
+      <div className="w-full sm:w-80">
+        <div className="relative">
+          <Search size={18} className="absolute left-3 top-2.5 text-slate-400" />
+          <input
+            value={searchTerm}
+            onChange={(e) => onSearch(e.target.value)}
+            placeholder="Buscar cuenta, OT, plan, zona..."
+            className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-200 text-sm font-semibold outline-none"
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* LOADING / EMPTY */}
+    {loading ? (
+      <div className="px-6 py-10 text-center text-slate-500">
+        <div className="inline-flex items-center gap-2 text-sm font-semibold">
+          <Loader2 className="animate-spin" size={18} /> Cargando ventas...
+        </div>
+      </div>
+    ) : sales.length === 0 ? (
+      <div className="px-6 py-12 text-center text-slate-500 text-sm">No hay ventas registradas para este periodo.</div>
+    ) : (
+      <>
+        {/* ====== MOBILE + TABLET (<lg): CARDS (sin scroll horizontal) ====== */}
+        <div className="lg:hidden divide-y divide-slate-100">
+          {sales.map((sale) => (
+            <div
+              key={sale.id}
+              onClick={() => onSelect(sale)}
+              className="p-4 hover:bg-slate-50 cursor-pointer transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-slate-100 shrink-0">
+                  <ServiceIcon line={sale.linea_negocio} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="font-extrabold text-slate-900 text-sm sm:text-base truncate">
+                    {sale.paquete_pvd || sale.venta || "Venta"}
+                  </div>
+
+                  <div className="mt-1 text-xs text-slate-500 font-semibold flex flex-wrap items-center gap-2">
+                    <span>{sale.linea_negocio || "N/D"}</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar size={14} className="text-slate-400" />
+                      {formatDate(sale.fecha)}
+                    </span>
+                    {sale.in_district != null ? (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className={sale.in_district ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
+                          {sale.in_district ? "Local" : "Fuera"}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
+
+                  {/* Meta en “mosaico” para que quepa en md sin overflow */}
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase">Cuenta</div>
+                      <div className="mt-0.5 text-sm font-mono font-bold text-slate-800 truncate">{sale.cuenta || "N/A"}</div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase">OT</div>
+                      <div className="mt-0.5 text-sm font-mono font-bold text-slate-800 truncate">{sale.ot || "N/A"}</div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2 col-span-2">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase">Ubicación</div>
+                      <div className="mt-0.5 text-sm font-semibold text-slate-800 flex items-center gap-2 truncate">
+                        <Globe size={14} className="text-slate-400" />
+                        <span className="truncate">{sale.poblacion || "N/D"}</span>
+                      </div>
+                      <div className="text-xs text-slate-500 font-semibold mt-0.5 truncate">
+                        {sale.zona || sale.area || sale.distrito_venta || "N/D"}
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2 col-span-2">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase">Modalidad</div>
+                      <div className="mt-0.5 text-sm font-extrabold text-slate-800 truncate">
+                        {sale.modalidad_venta || "N/D"}
+                      </div>
+                      <div className="text-xs text-slate-500 font-semibold truncate">
+                        {sale.tipo_prodcuto || sale.tipo_contrato || ""}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ====== DESKTOP (lg+): TABLE ====== */}
+        <div className="hidden lg:block">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-sm text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th className="px-4 xl:px-6 py-3">Plan / Servicio</th>
+                  <th className="px-4 xl:px-6 py-3">Identificadores</th>
+                  <th className="px-4 xl:px-6 py-3">Ubicación</th>
+                  <th className="px-4 xl:px-6 py-3 text-right">Modalidad</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sales.map((sale) => (
+                  <tr
+                    key={sale.id}
+                    className="hover:bg-slate-50 cursor-pointer transition-colors"
+                    onClick={() => onSelect(sale)}
+                  >
+                    <td className="px-4 xl:px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-slate-100">
+                          <ServiceIcon line={sale.linea_negocio} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-extrabold text-slate-900 text-sm sm:text-base truncate">
+                            {sale.paquete_pvd || sale.venta || "Venta"}
+                          </div>
+                          <div className="text-xs text-slate-500 font-semibold flex flex-wrap items-center gap-2">
+                            <span>{sale.linea_negocio || "N/D"}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Calendar size={14} className="text-slate-400" />
+                              {formatDate(sale.fecha)}
+                            </span>
+                            {sale.in_district != null ? (
+                              <>
+                                <span className="text-slate-300">•</span>
+                                <span className={sale.in_district ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
+                                  {sale.in_district ? "Local" : "Fuera"}
+                                </span>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 xl:px-6 py-4">
+                      <div className="text-sm font-mono font-bold text-slate-800">{sale.cuenta || "N/A"}</div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        OT: <span className="font-mono font-semibold text-slate-700">{sale.ot || "N/A"}</span>
+                      </div>
+                    </td>
+
+                    <td className="px-4 xl:px-6 py-4">
+                      <div className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                        <Globe size={14} className="text-slate-400" /> {sale.poblacion || "N/D"}
+                      </div>
+                      <div className="text-xs text-slate-500 font-semibold mt-1 truncate max-w-[260px]">
+                        {sale.zona || sale.area || sale.distrito_venta || "N/D"}
+                      </div>
+                    </td>
+
+                    <td className="px-4 xl:px-6 py-4 text-right">
+                      <div className="text-sm font-extrabold text-slate-800">{sale.modalidad_venta || "N/D"}</div>
+                      <div className="text-xs text-slate-500 font-semibold">{sale.tipo_prodcuto || sale.tipo_contrato || ""}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="px-6 py-3 text-sm text-slate-600 border-t border-slate-100 bg-slate-50">
+          Mostrando {sales.length} ventas
+        </div>
+      </>
+    )}
+  </div>
+);
+
+const SaleDetailModal = ({ sale, onClose }) => {
+  if (!sale) return null;
+  const fields = [
+    { label: "Cuenta", value: sale.cuenta },
+    { label: "OT", value: sale.ot },
+    { label: "Fecha", value: formatDate(sale.fecha) },
+    { label: "Distrito venta", value: sale.distrito_venta },
+    { label: "Población", value: sale.poblacion },
+    { label: "Zona", value: sale.zona || sale.area },
+    { label: "Modalidad", value: sale.modalidad_venta },
+    { label: "Tipo producto", value: sale.tipo_prodcuto },
+    { label: "Tipo red", value: sale.tipored },
+    { label: "Tipo contrato", value: sale.tipo_contrato },
+    { label: "Línea de negocio", value: sale.linea_negocio },
+    { label: "Plan / paquete", value: sale.paquete_pvd || sale.venta },
+    { label: "Convergente", value: sale.ventaconvergente },
+    { label: "Estado liquidación", value: sale.estado_liquidacion },
+    { label: "Registro", value: sale.tipo_registro },
+  ];
+
+  return (
+    <Modal
+      title="Detalle de venta"
+      onClose={onClose}
+      footer={
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800"
+          >
+            Cerrar
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-5 ">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+            <div className="p-3 bg-slate-100 rounded-xl w-fit">
+              <ServiceIcon line={sale.linea_negocio} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xl font-extrabold text-slate-900 leading-tight">
+                {sale.paquete_pvd || sale.venta || "Venta"}
+              </div>
+              <div className="mt-1 text-sm text-slate-600 flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-2">
+                  <Calendar size={14} className="text-slate-400" /> {formatDate(sale.fecha)}
+                </span>
+                {sale.in_district != null && (
+                  <span
+                    className={`inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-bold ${
+                      sale.in_district ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {sale.in_district ? "Venta local" : "Fuera de distrito"}
+                  </span>
+                )}
+                {sale.estado_liquidacion && (
+                  <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+                    {sale.estado_liquidacion}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase">Identificadores</div>
+            <div className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500">Cuenta</span>
+                <span className="font-mono">{sale.cuenta || "N/D"}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500">OT</span>
+                <span className="font-mono">{sale.ot || "N/D"}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500">Registro</span>
+                <span>{sale.tipo_registro || "N/D"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase">Ubicación</div>
+            <div className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500">Distrito venta</span>
+                <span className="text-right">{sale.distrito_venta || "N/D"}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500">Población</span>
+                <span className="text-right">{sale.poblacion || "N/D"}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500">Zona / Área</span>
+                <span className="text-right">{sale.zona || sale.area || "N/D"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase">Estado</div>
+            <div className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500">Línea de negocio</span>
+                <span className="text-right">{sale.linea_negocio || "N/D"}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500">Tipo contrato</span>
+                <span className="text-right">{sale.tipo_contrato || "N/D"}</span>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div className="text-xs font-semibold text-slate-500 uppercase mb-3">Detalle comercial</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {fields.map((f) => (
+              <div key={f.label} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <div className="text-[11px] font-semibold text-slate-500 uppercase">{f.label}</div>
+                <div className="mt-1 text-sm font-bold text-slate-800 break-words min-h-[36px]">{f.value || "N/D"}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+const ContactModal = ({ onClose }) => (
+  <Modal
+    title="Contactar supervisor"
+    onClose={onClose}
+    footer={
+      <div className="flex justify-end">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800"
+        >
+          Cerrar
+        </button>
+      </div>
+    }
+  >
+    <div className="bg-white border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
+      Funcionalidad en desarrollo. Aquí se conectará el flujo para contactar al supervisor/coordinador.
+    </div>
+  </Modal>
+);
+
+export default function AdvisorDashboard() {
+  const { user, token } = useAuthSession();
+
+  const [period, setPeriod] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
+  const [selectedSale, setSelectedSale] = useState(null);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [profileError, setProfileError] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  const advisorId = useMemo(() => {
+    const sources = [
+      user?.document_id,
+      user?.documentId,
+      user?.document,
+      user?.documento,
+      user?.cedula,
+      user?.advisor_id,
+      user?.advisorId
+    ];
+    return sources.find((v) => v) || "";
+  }, [user]);
+
+  const sales = useMemo(() => (Array.isArray(data?.sales) ? data.sales : []), [data]);
+  const total = data?.total ?? sales.length;
+
+  const filteredSales = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return sales;
+    return sales.filter((s) => {
+      const check = [s.cuenta, s.ot, s.id, s.poblacion, s.zona, s.paquete_pvd, s.linea_negocio]
+        .map((v) => String(v || "").toLowerCase())
+        .join(" ");
+      return check.includes(term);
+    });
+  }, [sales, searchTerm]);
+
+  const headers = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+
+  const fetchSales = async () => {
+    if (!advisorId) {
+      setError("No se pudo determinar el documento del asesor.");
+      setData(null);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const qs = new URLSearchParams({ period, advisor_id: String(advisorId) });
+      const res = await fetch(`${api}/api/siapp/monthly/sales?${qs.toString()}`, { headers });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message || "No se pudo cargar la información");
+      setData(json);
+    } catch (err) {
+      setError(err?.message || "Error al cargar las ventas");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSales();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, advisorId, token]);
+
+  const advisorName = user?.name || user?.nombre || "Asesor";
+  const advisorDistrict = user?.district_claro || user?.district || "N/D";
+  const now = useMemo(() => new Date(), []);
+  const currentPeriod = useMemo(() => `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`, [now]);
+  const isCurrentPeriod = period === currentPeriod;
+
+  const budgetFromProfile = useMemo(() => {
+    const val = profileData?.asesor?.presupuesto;
+    return val !== undefined ? parseNumber(val, null) : null;
+  }, [profileData]);
+
+  const presupuesto = useMemo(() => {
+    if (!isCurrentPeriod) return 0;
+    if (budgetFromProfile !== null) return budgetFromProfile;
+    return parseNumber(user?.presupuesto, 0);
+  }, [isCurrentPeriod, budgetFromProfile, user]);
+
+  const cumplimiento = presupuesto > 0 ? Math.round((parseNumber(total, 0) / presupuesto) * 100) : 0;
+
+  const fetchProfile = async () => {
+    if (!user?.id) return;
+    setProfileLoading(true);
+    setProfileError("");
+    try {
+      const res = await fetch(`${api}/api/users/profile/${user.id}`, { headers });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message || "No se pudo cargar el perfil");
+      setProfileData(json);
+    } catch (err) {
+      setProfileError(err?.message || "No se pudo cargar el perfil del asesor");
+      setProfileData(null);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, token]);
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 min-w-full">
+      <header className="">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-xl md:text-2xl font-extrabold text-slate-900">Dashboard Asesor</h1>
+            <p className="text-sm text-slate-500">Ventas SIAPP del periodo seleccionado</p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <PeriodSelector period={period} onChange={setPeriod} />
+            <button
+              onClick={() => setContactOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-[#C62828] border border-red-100 rounded-xl text-sm font-semibold hover:bg-red-100"
+            >
+              <MessageSquare size={16} /> Contactar supervisor
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 ">
+        <MobileProfileInfo data={profileData} />
+
+        {!advisorId && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-sm">
+            No se pudo determinar el documento del asesor. Inicie sesión nuevamente o contacte soporte.
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex items-start gap-3">
+            <AlertTriangle size={16} className="mt-0.5" />
+            <div className="flex-1">
+              <div className="font-semibold">Error al cargar ventas</div>
+              <div className="mt-0.5">{error}</div>
+              <button
+                onClick={fetchSales}
+                className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-[#C62828] text-white rounded-lg text-xs font-semibold hover:bg-red-700"
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ===== KPI MOSAICO SOLO EN MÓVIL (evita 4 bloques en columna) ===== */}
+        {isCurrentPeriod ? (
+          <>
+            <section className="md:hidden grid grid-cols-2 gap-3">
+              <KpiCard title="Periodo" value={formatPeriodLabel(period)} subtitle={period} />
+              <KpiCard title="Presupuesto" value={presupuesto > 0 ? presupuesto : "N/A"} subtitle="Meta asignada" />
+              <KpiCard
+                title="Cumplimiento"
+                value={presupuesto > 0 ? `${cumplimiento}%` : "0%"}
+                subtitle={presupuesto > 0 ? `${total} / ${presupuesto} conexiones` : `${total} conexiones`}
+                tone="green"
+              />
+              <ProgressMiniCard
+                total={total}
+                presupuesto={presupuesto}
+                advisorName={advisorName}
+                advisorDistrict={advisorDistrict}
+              />
+            </section>
+
+            {/* ===== KPI NORMAL EN md+ (se mantiene como lo tienes porque ahí se ve bien) ===== */}
+            <section className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-4">
+              <KpiCard title="Periodo" value={formatPeriodLabel(period)} subtitle={period} />
+              <KpiCard title="Presupuesto" value={presupuesto > 0 ? presupuesto : "N/A"} subtitle="Meta asignada" />
+              <KpiCard
+                title="Cumplimiento"
+                value={presupuesto > 0 ? `${cumplimiento}%` : "0%"}
+                subtitle={presupuesto > 0 ? `${total} / ${presupuesto} conexiones` : `${total} conexiones registradas`}
+                tone="green"
+              />
+            </section>
+
+            {/* ===== Progreso grande SOLO md+ (en móvil ya va en la mini-card) ===== */}
+            <section className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm text-slate-500 font-semibold">Progreso del periodo</div>
+                  <div className="text-2xl font-extrabold text-slate-900">
+                    {total} conexiones {presupuesto > 0 && <span className="text-slate-400">/ {presupuesto}</span>}
+                  </div>
+                </div>
+
+              </div>
+              <div className="mt-3 w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#C62828] transition-all duration-500"
+                  style={{ width: `${Math.min(100, presupuesto > 0 ? (total / presupuesto) * 100 : 0)}%` }}
+                />
+              </div>
+              <div className="mt-2 text-sm text-slate-500">
+                {presupuesto > 0
+                  ? `${Math.max(0, presupuesto - total)} ventas para cumplir la meta.`
+                  : "Define una meta para ver faltantes."}
+              </div>
+            </section>
+          </>
+        ) : (
+          <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <KpiCard title="Periodo" value={formatPeriodLabel(period)} subtitle={period} />
+            <KpiCard title="Ventas del periodo" value={total} subtitle="Conexiones registradas" />
+          </section>
+        )}
+
+        <SalesTable
+          sales={filteredSales}
+          loading={loading}
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          onSelect={setSelectedSale}
+        />
+      </main>
+
+      {selectedSale ? <SaleDetailModal sale={selectedSale} onClose={() => setSelectedSale(null)} /> : null}
+      {contactOpen ? <ContactModal onClose={() => setContactOpen(false)} /> : null}
+    </div>
+  );
 }

@@ -14,7 +14,8 @@ import {
     setCoordinatorId,
     setCoordinatorPeriod
 } from "../../store/reducers/advisorsReducers"
-import { getStoredUser } from "../utils/auth"
+import { api } from "../../store/api"
+import { getStoredUser, getStoredToken } from "../utils/auth"
 const META_CONEXIONES = 13
 const DIAS_META = 30
 
@@ -89,6 +90,10 @@ export default function Advisors() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false)
     const [selectedIds, setSelectedIds] = useState(new Set())
     const [sortOrder, setSortOrder] = useState("desc")
+    const [showOnlyWithNovelties, setShowOnlyWithNovelties] = useState(false)
+    const [noveltyLoading, setNoveltyLoading] = useState(false)
+    const [noveltyError, setNoveltyError] = useState("")
+    const [noveltyCache, setNoveltyCache] = useState(new Map()) // period -> { ids: Set, counts: Map }
 
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -101,6 +106,90 @@ export default function Advisors() {
     const selectAllRef = useRef(null)
     const lastFetchRef = useRef({ id: null, period: null })
 
+    const monthRange = (period) => {
+        const [y, m] = String(period || "").split("-")
+        if (!y || !m) return { date_from: "", date_to: "" }
+        const year = Number(y)
+        const month = Number(m)
+        const date_from = `${y}-${String(m).padStart(2, "0")}-01`
+        const lastDay = new Date(year, month, 0).getDate()
+        const date_to = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
+        return { date_from, date_to }
+    }
+
+    const noveltySetForPeriod = useMemo(() => {
+        const entry = noveltyCache.get(coordinatorMeta.period)
+        return entry?.ids || new Set()
+    }, [noveltyCache, coordinatorMeta.period])
+
+    const noveltyCountMapForPeriod = useMemo(() => {
+        const entry = noveltyCache.get(coordinatorMeta.period)
+        return entry?.counts || new Map()
+    }, [noveltyCache, coordinatorMeta.period])
+
+    const fetchNovelties = async (periodParam = coordinatorMeta.period, autoActivate = false) => {
+        const period = periodParam
+        if (!period) return
+        if (noveltyCache.has(period)) {
+            if (autoActivate) setShowOnlyWithNovelties(true)
+            return
+        }
+
+        const { date_from, date_to } = monthRange(period)
+        setNoveltyLoading(true)
+        setNoveltyError("")
+
+        const ids = new Set()
+        const counts = new Map()
+        let offset = 0
+        const limit = 200
+        let keepGoing = true
+
+        const token = getStoredToken()
+        const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
+        try {
+            while (keepGoing) {
+                const qs = new URLSearchParams({ date_from, date_to, limit: String(limit), offset: String(offset) })
+                const res = await fetch(`${api}/api/novedades?${qs.toString()}`, { method: "GET", headers })
+                const json = await res.json()
+                if (!res.ok) throw new Error(json?.message || "No se pudieron cargar las novedades")
+
+                const items = Array.isArray(json?.items) ? json.items : []
+                items.forEach((n) => {
+                    const uid = Number(n.user_id ?? n.advisor_id ?? n.id)
+                    if (!Number.isNaN(uid)) {
+                        ids.add(uid)
+                        counts.set(uid, (counts.get(uid) || 0) + 1)
+                    }
+                })
+
+                const total = Number(json?.total ?? items.length)
+                offset += items.length
+                keepGoing = items.length === limit && offset < total
+                if (!keepGoing) break
+            }
+
+            setNoveltyCache((prev) => {
+                const next = new Map(prev)
+                next.set(period, { ids, counts })
+                return next
+            })
+            if (autoActivate) setShowOnlyWithNovelties(true)
+        } catch (err) {
+            setNoveltyError(err?.message || "No se pudieron cargar las novedades")
+        } finally {
+            setNoveltyLoading(false)
+        }
+    }
+
+    const handleToggleNoveltyFilter = () => {
+        if (showOnlyWithNovelties) {
+            setShowOnlyWithNovelties(false)
+            return
+        }
+        fetchNovelties(coordinatorMeta.period, true)
+    }
     useEffect(() => {
         const stored = getStoredUser()
         const storedId = stored?.coordinator_id || stored?.id
@@ -126,7 +215,18 @@ export default function Advisors() {
 
         lastFetchRef.current = { id: desiredId, period: coordinatorMeta.period }
         dispatch(fetchAdvisorsByCoordinator({ coordinatorId: desiredId, period: coordinatorMeta.period }))
+        // Pre-cargar novedades para el periodo actual (cache). No activa el filtro.
+        if (!noveltyCache.has(coordinatorMeta.period)) {
+            fetchNovelties(coordinatorMeta.period, false)
+        }
     }, [dispatch, coordinatorId, coordinatorMeta.period])
+
+    useEffect(() => {
+        if (showOnlyWithNovelties && !noveltyCache.has(coordinatorMeta.period)) {
+            fetchNovelties(coordinatorMeta.period, true)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [coordinatorMeta.period])
 
     useEffect(() => {
         setSelectedIds((prev) => {
@@ -183,7 +283,18 @@ export default function Advisors() {
         })
     }, [coordinatorAdvisors])
 
-    const dataset = apiAsesores
+    const dataset = useMemo(() => {
+        return apiAsesores.map((a) => {
+            const uid = Number(a.id ?? a.advisor_id ?? a.cedula)
+            const noveltyCount = noveltyCountMapForPeriod.get(uid)
+            return noveltyCount !== undefined
+                ? {
+                      ...a,
+                      novedades: Array.from({ length: noveltyCount }).map(() => "Novedad registrada")
+                  }
+                : a
+        })
+    }, [apiAsesores, noveltyCountMapForPeriod])
 
     const averageCompliance = useMemo(() => {
         if (dataset.length === 0) return 0
@@ -199,14 +310,21 @@ export default function Advisors() {
         return clampPercent(Number(avg.toFixed(2)))
     }, [dataset])
 
+    const noveltyCount = useMemo(() => {
+        return dataset.filter((a) => {
+            const uid = Number(a.id ?? a.advisor_id ?? a.cedula)
+            return noveltySetForPeriod.has(uid)
+        }).length
+    }, [dataset, noveltySetForPeriod])
+
     const counts = useMemo(
         () => ({
             incumplimiento: dataset.filter((a) => matchesStatusFilter(a, "incumplimiento")).length,
             completas: dataset.filter((a) => matchesStatusFilter(a, "completas")).length,
-            novedades: dataset.filter((a) => matchesStatusFilter(a, "novedades")).length,
+            novedades: noveltyCount,
             finContrato: dataset.filter((a) => matchesStatusFilter(a, "fin_contrato")).length
         }),
-        [dataset]
+        [dataset, noveltyCount]
     )
 
     const periodOptions = useMemo(() => {
@@ -253,6 +371,13 @@ export default function Advisors() {
             })
         }
 
+        if (showOnlyWithNovelties) {
+            result = result.filter((asesor) => {
+                const uid = Number(asesor.id ?? asesor.advisor_id ?? asesor.cedula)
+                return noveltySetForPeriod.has(uid)
+            })
+        }
+
         result.sort((a, b) => {
             const aValue = a.cumplimiento ?? 0
             const bValue = b.cumplimiento ?? 0
@@ -260,7 +385,7 @@ export default function Advisors() {
         })
 
         return result
-    }, [dataset, query, complianceRange, statusFilters, sortOrder])
+    }, [dataset, query, complianceRange, statusFilters, sortOrder, showOnlyWithNovelties, noveltySetForPeriod])
 
     const totalAsesores = dataset.length
     const visibleAsesores = filteredAdvisors.length
@@ -369,9 +494,10 @@ export default function Advisors() {
         {
             id: "novedades",
             title: "Asesores con Novedades",
-            value: counts.novedades,
-            accentColor: "bg-blue-100",
-            statusKey: "novedades",
+            value: noveltyLoading ? "…" : counts.novedades,
+            accentColor: showOnlyWithNovelties ? "bg-red-100" : "bg-blue-100",
+            statusKey: null,
+            type: "novelty",
             icon: (
                 <svg className="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.266 24.266 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M1.125 7.5A8.967 8.967 0 013.42 1.622c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.266 24.266 0 00-5.714 0m5.714 0a3 3 0 10-5.714 0" />
@@ -409,10 +535,19 @@ export default function Advisors() {
                             value={card.value}
                             accentColor={card.accentColor}
                             icon={card.icon}
-                            onFilter={() => handleKpiFilter(card.statusKey)}
+                            onFilter={() => {
+                                if (card.type === "novelty") handleToggleNoveltyFilter()
+                                else handleKpiFilter(card.statusKey)
+                            }}
+                            linkLabel={card.type === "novelty" ? (showOnlyWithNovelties ? "Filtro activo" : "Filtrar lista") : "Filtrar lista"}
                         />
                     ))}
                 </div>
+                {noveltyError && (
+                    <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+                        {noveltyError}
+                    </div>
+                )}
 
                 <section className="mt-10 overflow-hidden rounded-lg bg-white shadow w-full min-w-0">
                     <div className="border-b border-gray-200 p-4 sm:p-6">
@@ -512,20 +647,23 @@ export default function Advisors() {
 
                     <div className="custom-scrollbar max-h-[70vh] overflow-y-auto overflow-x-hidden px-1 sm:px-2">
                         <ul className="divide-y divide-gray-200">
-                            {filteredAdvisors.map((asesor) => (
-                                <AdvisorsListItem
-                                    key={asesor.id}
-                                    advisor={asesor}
-                                    checked={selectedIds.has(asesor.advisor_id)}
-                                    onToggle={handleToggleSelect}
-                                    onView={handleViewAdvisor}
-                                    trend={buildTrend(asesor)}
-                                />
-                            ))}
-                            {filteredAdvisors.length === 0 && (
+                            {filteredAdvisors.length === 0 ? (
                                 <li className="p-6 text-sm text-gray-500">
-                                    No se encontraron asesores con los criterios actuales.
+                                    {showOnlyWithNovelties
+                                        ? "No hay asesores con novedades en el periodo seleccionado."
+                                        : "No se encontraron asesores con los criterios actuales."}
                                 </li>
+                            ) : (
+                                filteredAdvisors.map((asesor) => (
+                                    <AdvisorsListItem
+                                        key={asesor.id}
+                                        advisor={asesor}
+                                        checked={selectedIds.has(asesor.advisor_id)}
+                                        onToggle={handleToggleSelect}
+                                        onView={handleViewAdvisor}
+                                        trend={buildTrend(asesor)}
+                                    />
+                                ))
                             )}
                         </ul>
                     </div>

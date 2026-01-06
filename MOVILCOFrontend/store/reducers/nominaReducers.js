@@ -1,15 +1,15 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import { api } from "../api";
 
 export const fetchNomina = createAsyncThunk(
   "nomina/fetchNomina",
   async (params = {}, { rejectWithValue }) => {
     try {
       const { data } = await axios.get(
-        "http://localhost:8080/api/staging/nomina",
+        `${api}/api/staging/nomina`,
         { params }
       );
-      console.log(data.rows);
       
       return data.rows;
       

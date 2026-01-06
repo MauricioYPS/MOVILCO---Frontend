@@ -37,7 +37,6 @@ const Icon = ({ name, size = 18, className = "" }) => (
 
 const roleStorage = localStorage.getItem("auth_user") ? JSON.parse(localStorage.getItem("auth_user")) : null;
 const role = roleStorage?.rol || "COORDINACION";
-console.log(role, "roleando");
 
 const InfoCard = ({ icon, label, value, highlight, small }) => (
   <div
@@ -106,7 +105,6 @@ export default function SideBar() {
 
   const asesor = profile?.asesor || {};
   const coord = profile?.coordinador || {};
-  console.log("Profile ", profile);
 
   const stored = localStorage.getItem("auth_user");
   const parsed = stored ? JSON.parse(stored) : {};
@@ -120,7 +118,6 @@ export default function SideBar() {
     regional: asesor.regional || "Regional N/D",
     budget: asesor.presupuesto ? `${asesor.presupuesto}` : "Presupuesto N/D",
   };
-  console.log("SideBar", userInfo);
 
 
   const bossInfo = {

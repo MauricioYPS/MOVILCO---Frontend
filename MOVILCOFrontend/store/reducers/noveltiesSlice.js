@@ -76,7 +76,6 @@ export const fetchNoveltyDetail = createAsyncThunk(
     try {
       withAuth();
       const { data } = await axios.get(`${api}/api/novedades/${id}`);
-      console.log("detalle de novedad", data);
       return normalizeItem(data || {});
     } catch (err) {
       const message = err?.response?.data?.message || err?.response?.data?.error || err?.message || "No se pudo cargar el detalle";

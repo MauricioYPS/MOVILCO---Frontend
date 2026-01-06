@@ -159,54 +159,7 @@ export default function SupervisorSalesPanel({ advisorId, period }) {
     if (activeTab === "approved") loadApproved();
   }, [activeTab]);
 
-  if(role === "COORDINACION"){
-    return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">
-        Gestion de Ventas del Coordinador
-      </h2>
-
-      <div className="flex gap-2 border-b mb-6">
-        <Tab label="Pendientes" active={activeTab === "pending"} onClick={() => setActiveTab("pending")} />
-        <Tab label="Aprobadas" active={activeTab === "approved"} onClick={() => setActiveTab("approved")} />
-        <Tab label="CIAP" active={activeTab === "ciap"} onClick={() => setActiveTab("ciap")} />
-      </div>
-
-      {loading && (
-        <div className="text-center py-6 text-gray-500">
-          Cargando informaci&oacute;n...
-        </div>
-      )}
-
-      {!loading && activeTab === "pending" && (
-        <SalesTable
-          data={pendingSales}
-          emptyText="No hay ventas pendientes por aprobar"
-          actions={[
-            { label: "Aprobar", onClick: approveSale },
-            { label: "Editar", onClick: editSale },
-            { label: "Ver" },
-          ]}
-        />
-      )}
-
-      {!loading && activeTab === "approved" && (
-        <SalesTable
-          data={approvedSales}
-          emptyText="No hay ventas aprobadas"
-          actions={[
-            // { label: "Editar", onClick: editSale },
-            { label: "Exportar CIAP", onClick: exportSale, disabled: (item) => exportedIds.has(item.id) },
-            // { label: "Ver" },
-          ]}
-        />
-      )}
-
-      {!loading && activeTab === "ciap" && (
-        <CiapTable data={ciapList} onExportMonth={exportMonth} monthExported={monthExported} />
-      )}
-    </div>
-  );}
+  
 }
 
 function Tab({ label, active, onClick }) {

@@ -49,7 +49,7 @@ export default function Navbar() {
       return NAV_ITEMS.filter((item) => item.id === "dashboardAsesores");
     }
     if (["COORDINACION", "COORDINADOR COMERCIAL"].includes(userRole)) {
-      return NAV_ITEMS.filter((item) => ["asesores", "recreoCoordinadores"].includes(item.id));
+      return NAV_ITEMS.filter((item) => ["asesores"].includes(item.id));
     }
     if (["DIRECCION", "DIRECTOR COMERCIAL"].includes(userRole)) {
       return NAV_ITEMS.filter((item) => ["coordinadores"].includes(item.id));

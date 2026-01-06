@@ -1,13 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
-
+import { api } from "../api";
 export const fetchSiapp = createAsyncThunk(
   "siapp/fetchSiapp",
   async (params = {}, { rejectWithValue }) => {
     const defaultParams = { limit: 100, ...params };
     try {
       const { data } = await axios.get(
-        "http://localhost:8080/api/staging/siapp",
+        `${api}/api/staging/siapp`,
         { params: defaultParams }
       );
       return data;

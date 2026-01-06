@@ -5,6 +5,7 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import {api} from "../../../store/api"
 
 const Icon = ({ path, size = 20, className = "" }) => (
     <svg
@@ -29,7 +30,7 @@ export default function SidebarAdvisor() {
 
     const handleLogout = async () => {
         try {
-            await fetch("http://localhost:3002/api/auth/logout", {
+            await fetch(`${api}/api/auth/logout`, {
                 method: "POST",
                 credentials: "include"
             })

@@ -190,7 +190,7 @@ const DataWorkflow = () => {
       "siapp-promote",
       setSiappState,
       async () => {
-        await axios.post(`${api}/api/promote/siapp_full`, null, { params: { period } });
+        await axios.post(`${api}/api/promote/siapp_full`, null, { params: { mode: "merge" } });
       },
       "SIAPP promovido."
     );
@@ -482,7 +482,7 @@ const DataWorkflow = () => {
             </section>
 
             {/* Jerarquía y Presupuesto */}
-            <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            {/* <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3 bg-amber-50/50">
                 <div className="p-2 bg-amber-100 text-amber-700 rounded-lg">
                   <Icon name="users" size={20} />
@@ -550,7 +550,7 @@ const DataWorkflow = () => {
               <div className="px-6 pb-6 lg:px-8">
                 <StatusMessage message={budgetState.message} error={budgetState.error} />
               </div>
-            </section>
+            </section> */}
 
             {/* Exportes */}
             <section className="mt-4">

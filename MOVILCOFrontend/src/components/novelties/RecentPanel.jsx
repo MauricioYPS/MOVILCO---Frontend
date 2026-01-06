@@ -4,7 +4,7 @@ import Badge from "./common/Badge";
 
 const RecentPanel = React.memo(function RecentPanel({ loading, items, onRefresh }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden w-full">
       <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
         <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2">
           <Clock size={16} className="text-slate-400" /> Recientes (3 días)

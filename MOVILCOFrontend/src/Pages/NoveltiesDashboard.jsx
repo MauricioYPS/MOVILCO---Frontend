@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { Plus, AlertCircle, ChevronRight } from "lucide-react"
+import { Plus, AlertCircle, ChevronRight, Database } from "lucide-react"
 import useAuthSession from "../hooks/useAuthSession"
 import FilterToolbar from "../components/novelties/FilterToolbar"
 import RecentPanel from "../components/novelties/RecentPanel"
@@ -37,6 +37,7 @@ const computeStatus = (start, end) => {
   return "Active"
 }
 
+
 const buildDatesLabel = (start, end) => {
   const formattedStart = formatDate(start)
   const formattedEnd = formatDate(end)
@@ -47,8 +48,10 @@ const buildDatesLabel = (start, end) => {
   if (formattedStart || formattedEnd) return `${formattedStart} - ${formattedEnd}`.trim()
   return ""
 }
-
 const mapNoveltyItem = (item = {}) => ({
+
+
+  
   id: item.id,
   name: item.user_name || item.name || "Sin nombre",
   docId: item.document_id || item.docId || "",
@@ -108,6 +111,11 @@ const NoveltyManager = () => {
     if (selectedNovelty?.type && !base.includes(selectedNovelty.type)) return [...base, selectedNovelty.type]
     return base
   }, [selectedNovelty?.type])
+
+  const goDB = useCallback(() => {
+    // Use hard navigation to avoid router-context issues triggering invalid hook calls
+    window.location.assign("/DataWorkflow")
+  }, [])
 
   useEffect(() => {
     if (role === "ADMIN") {
@@ -319,14 +327,34 @@ const NoveltyManager = () => {
             <Plus size={18} /> Registrar Novedad
           </button>
         </div>
+
       </div>
 
       {/* REORGANIZACIÓN:
          - RecentPanel ahora va arriba (full width) para no quitar ancho al DataTable.
          - Abajo queda el bloque filtros + tabla aprovechando el 100% del ancho. */}
       <div className="space-y-5">
-        <div className="lg:w-2/5 w-full mb-4">
-          <RecentPanel loading={recentLoading} items={recentMapped} onRefresh={() => dispatch(fetchRecentNovelties())} />
+        <div className="w-full">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+            <div className="flex-1 min-w-0">
+              <RecentPanel loading={recentLoading} items={recentMapped} onRefresh={() => dispatch(fetchRecentNovelties())} />
+            </div>
+            <div className="w-full lg:w-64 flex-shrink-0">
+              <button
+                onClick={goDB}
+                className="w-full flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 text-left shadow-sm transition hover:shadow-md"
+              >
+                <div className="shrink-0 bg-emerald-50 text-emerald-600 p-2 rounded-lg ">
+                  <Database size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">Datos</div>
+                  <div className="text-sm font-bold text-slate-800 truncate">Actualizar DB</div>
+                  <div className="mt-0.5 text-[11px] text-gray-500 truncate">Workflow de carga y sync</div>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">

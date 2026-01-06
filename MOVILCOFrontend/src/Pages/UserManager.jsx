@@ -12,7 +12,20 @@ import {
   Download,
   X,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Calendar,
+  CreditCard,
+  ShieldCheck,
+  Activity,
+  TrendingUp,
+  Building2,
+  Award,
+  Hash,
+  FileText
 } from "lucide-react";
 import useAuthSession from "../hooks/useAuthSession";
 import { getStoredToken } from "../utils/auth";
@@ -20,9 +33,8 @@ import { api } from "../../store/api";
 
 const StatusBadge = ({ active }) => (
   <span
-    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${
-      active ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"
-    }`}
+    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${active ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"
+      }`}
   >
     <span className={`w-2 h-2 rounded-full ${active ? "bg-emerald-500" : "bg-amber-500"}`} />
     {active ? "Activo" : "Inactivo"}
@@ -141,9 +153,8 @@ const CoordinatorSelect = ({ coordinators = [], value, onChange, loading, error,
                   key={coord.id}
                   type="button"
                   onClick={() => onChange(String(coord.id))}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-red-50 ${
-                    isSelected ? "bg-red-50 border-l-4 border-l-red-600" : ""
-                  }`}
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-red-50 ${isSelected ? "bg-red-50 border-l-4 border-l-red-600" : ""
+                    }`}
                 >
                   <div className="font-semibold text-slate-800">{coord.name}</div>
                   <div className="text-[11px] text-slate-500">{coord.document_id}</div>
@@ -317,6 +328,208 @@ const buildFormFromUser = (user, modalType) => {
   };
 };
 
+const formatDateLong = (dateString) => {
+  if (!dateString) return "N/A";
+  try {
+    return new Date(dateString).toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" });
+  } catch {
+    return String(dateString);
+  }
+};
+
+const UserDetailsModalContent = ({ data, fallbackUser }) => {
+  const asesor = data?.asesor || fallbackUser || {};
+  const organizacion = data?.organizacion || {};
+  const coordinador = data?.coordinador || {};
+
+
+  const getInitials = (name) => (name ? name.substring(0, 2).toUpperCase() : "US");
+  const meta = parseInt(asesor?.presupuesto || 0, 10);
+  const ejecutado = parseInt(asesor?.ejecutado || 0, 10);
+  const porcentaje = meta > 0 ? Math.min(100, Math.round((ejecutado / meta) * 100)) : 0;
+
+  const InfoItem = ({ label, value, icon: Icon, isEmail }) => (
+
+    <div className="group">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        {Icon && <Icon size={14} className="text-slate-400 group-hover:text-red-500 transition-colors" />}
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{label}</span>
+      </div>
+      <div
+        className={`font-semibold text-sm text-slate-800 ${isEmail ? "break-all" : "truncate"
+          } pl-0.5 border-l-2 border-transparent group-hover:border-red-500 group-hover:pl-2 transition-all`}
+      >
+        {value || "N/D"}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-6 text-slate-800">
+      <div className="relative bg-white px-6 py-5 border border-slate-100 rounded-2xl shadow-sm flex justify-between items-start">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#C62828] to-red-500" />
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-slate-50 border-2 border-red-100 flex items-center justify-center text-lg font-bold text-[#C62828] shadow-sm">
+            {getInitials(asesor?.name)}
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900 leading-tight">{asesor?.name}</h2>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              <span className="px-2.5 py-0.5 rounded-md bg-red-50 text-red-700 text-[11px] font-bold border border-red-100 uppercase tracking-wide">
+                {asesor?.role || fallbackUser?.role || "ROL"}
+              </span>
+              <span
+                className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${asesor?.active ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-100 text-slate-500 border-slate-200"
+                  }`}
+              >
+                {asesor?.active ? "ACTIVO" : "INACTIVO"}
+              </span>
+              <span className="text-[11px] text-slate-400 flex items-center gap-1 ml-1 font-mono">
+                <Hash size={12} /> ID: {asesor?.id || fallbackUser?.id}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <section className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+              Datos personales & Contrato
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-8">
+              <InfoItem label="Documento ID" value={asesor?.document_id} icon={CreditCard} />
+              <InfoItem label="Cargo" value={asesor?.cargo || fallbackUser?.cargo} icon={Briefcase} />
+              <InfoItem label="Correo" value={asesor?.email || fallbackUser?.email} icon={Mail} isEmail />
+              <InfoItem label="Teléfono" value={asesor?.phone || fallbackUser?.phone} icon={Phone} />
+              <InfoItem label="Inicio contrato" value={formatDateLong(asesor?.contract_start)} icon={Calendar} />
+              <InfoItem label="Fin contrato" value={formatDateLong(asesor?.contract_end)} icon={Calendar} />
+              <InfoItem label="Estado contrato" value={asesor?.contract_status || "N/A"} icon={FileText} />
+              <InfoItem label="Origen" value={asesor?.created_source || "N/A"} icon={Activity} />
+            </div>
+          </section>
+
+          <section className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+              <Building2 size={14} className="text-[#C62828]" />
+              Ubicación organizacional
+            </h4>
+
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex-1 p-4 bg-slate-50 rounded-xl border border-slate-100 relative">
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Gerencia</div>
+                <div className="font-bold text-slate-800 text-sm truncate" title={organizacion?.gerencia?.name}>
+                  {organizacion?.gerencia?.name || "N/A"}
+                </div>
+                <div className="hidden sm:block absolute top-1/2 -right-3 w-4 h-0.5 bg-slate-300" />
+              </div>
+              <div className="flex-1 p-4 bg-slate-50 rounded-xl border border-slate-100 relative">
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Dirección</div>
+                <div className="font-bold text-slate-800 text-sm truncate" title={organizacion?.direccion?.name}>
+                  {organizacion?.direccion?.name || "N/A"}
+                </div>
+                <div className="hidden sm:block absolute top-1/2 -right-3 w-4 h-0.5 bg-slate-300" />
+              </div>
+              <div className="flex-1 p-4 bg-red-50 rounded-xl border border-red-100">
+                <div className="text-[10px] font-bold text-red-400 uppercase mb-1">Coordinación</div>
+                <div className="font-bold text-red-900 text-sm truncate" title={organizacion?.coordinacion?.name}>
+                  {organizacion?.coordinacion?.name || "N/A"}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
+              <InfoItem label="Regional" value={asesor?.regional || fallbackUser?.regional} icon={MapPin} />
+              <InfoItem label="Distrito Claro" value={asesor?.district_claro || fallbackUser?.district_claro} icon={MapPin} />
+              <InfoItem label="Distrito" value={asesor?.district || fallbackUser?.district} icon={MapPin} />
+              <InfoItem label="Org Unit ID" value={asesor?.org_unit_id || fallbackUser?.org_unit_id} icon={Hash} />
+            </div>
+          </section>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-6 opacity-90">
+                <TrendingUp size={18} className="text-emerald-400" />
+                <span className="text-xs font-bold uppercase tracking-wider">Gestión comercial</span>
+              </div>
+              <div className="flex justify-between items-end mb-3">
+                <div>
+                  <span className="text-4xl font-extrabold">{meta || 0}</span>
+                  <span className="text-xs text-slate-400 ml-1 block uppercase tracking-wide">Meta asignada</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-bold text-emerald-400">{ejecutado || 0}</span>
+                  <span className="text-xs text-slate-400 block uppercase tracking-wide">Real</span>
+                </div>
+              </div>
+              <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden mb-3">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${porcentaje >= 80 ? "bg-emerald-500" : porcentaje >= 50 ? "bg-amber-500" : "bg-red-500"
+                    }`}
+                  style={{ width: `${porcentaje}%` }}
+                />
+              </div>
+              <div className="flex justify-between items-center text-[10px] text-slate-400">
+                <span>0%</span>
+                <span className="font-bold text-white">{porcentaje}% Cumplimiento</span>
+                <span>100%</span>
+              </div>
+            </div>
+            <div className="absolute right-0 top-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10 pointer-events-none" />
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+              <Award size={14} className="text-amber-500" /> Líder asignado
+            </h4>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-sm border-2 border-slate-50 shrink-0">
+                {getInitials(coordinador?.name)}
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-sm text-slate-900 truncate" title={coordinador?.name}>
+                  {coordinador?.name || "Sin asignar"}
+                </p>
+                <p className="text-[10px] text-slate-500 truncate uppercase tracking-wide">{coordinador?.cargo || "Coordinador"}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 border border-slate-100">
+                <Mail size={14} className="text-slate-400 shrink-0" />
+                <span className="truncate">{coordinador?.email || "N/A"}</span>
+              </div>
+              <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 border border-slate-100">
+                <Phone size={14} className="text-slate-400 shrink-0" />
+                <span>{coordinador?.phone || "N/A"}</span>
+              </div>
+              <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 border border-slate-100">
+                <CreditCard size={14} className="text-slate-400 shrink-0" />
+                <span>CC: {coordinador?.document_id || "N/A"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-2 py-3 bg-white border border-slate-100 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500 gap-2">
+        <div className="flex items-center gap-2">
+          <ShieldCheck size={14} className="text-emerald-500" />
+          <span>
+            Registro actualizado:{" "}
+            <span className="font-mono text-slate-700">{formatDateLong(asesor?.updated_at || fallbackUser?.updated_at)}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <FileText size={14} className="text-slate-400" />
+          <span className="text-slate-600">Notas: {asesor?.notes || fallbackUser?.notes || "Sin notas"}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 export default function UserManager() {
   const { token: sessionToken, role: sessionRole } = useAuthSession();
 
@@ -329,6 +542,9 @@ export default function UserManager() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [errorDetail, setErrorDetail] = useState(null);
+  const [profileDetail, setProfileDetail] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -392,8 +608,12 @@ export default function UserManager() {
   const handleOpenDetail = async (user) => {
     setSelectedUser(user);
     setErrorDetail(null);
+    setProfileDetail(null);
+    setProfileError(null);
     setModalType("detail");
-    await fetchUserDetail(user.id, false);
+    const targetId = user?.user_id ?? user?.id;
+    await fetchUserDetail(targetId, false);
+    await fetchUserProfile(targetId);
   };
 
   const handleOpenDelete = (user) => {
@@ -408,6 +628,8 @@ export default function UserManager() {
     setSaveError(null);
     setDeleteError(null);
     setErrorDetail(null);
+    setProfileDetail(null);
+    setProfileError(null);
     setSelectedCoordinatorId("");
     setForm(baseFormState);
   };
@@ -450,6 +672,23 @@ export default function UserManager() {
       setLoadingDetail(false);
     }
   }, []);
+
+  const fetchUserProfile = useCallback(async (rawId) => {
+    const id = rawId ?? selectedUser?.user_id ?? selectedUser?.id;
+    if (!id) return;
+    setProfileLoading(true);
+    setProfileError(null);
+    try {
+      const data = await apiFetch(`${api}/api/users/profile/${id}`);
+      // Algunos endpoints devuelven { ok, asesor, ... }; usamos ese shape.
+      setProfileDetail(data || null);
+    } catch (err) {
+      setProfileError(err?.message || "No se pudo cargar el perfil");
+      setProfileDetail(null);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [selectedUser]);
 
   useEffect(() => {
     if (!isRoleAsesoria && selectedCoordinatorId) {
@@ -1010,7 +1249,9 @@ export default function UserManager() {
                 className="bg-slate-50 border border-slate-200 rounded-md px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-red-200"
               >
                 <option value="ALL">Rol: Todos</option>
-                <option value="RECURSOS_HUMANOS">RECURSOS_HUMANOS</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="GERENCIA">GERENCIA</option>
+                <option value="DIRECCION">DIRECCION</option>
                 <option value="COORDINACION">COORDINACION</option>
                 <option value="ASESORIA">ASESOR</option>
               </select>
@@ -1221,57 +1462,17 @@ export default function UserManager() {
 
       {modalType === "detail" && selectedUser && (
         <Modal title={`Detalle usuario #${selectedUser.user_id ?? selectedUser.id}`} onClose={closeModal} size="lg">
-          {loadingDetail && <div className="text-sm text-slate-500">Cargando detalle...</div>}
-          {errorDetail && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2">{errorDetail}</div>
+          {(loadingDetail || profileLoading) && <div className="text-sm text-slate-500">Cargando detalle...</div>}
+          {(errorDetail || profileError) && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2">
+              {errorDetail || profileError}
+            </div>
           )}
           {!loadingDetail && (
-            <div className="grid grid-cols-2 gap-4 text-base">
-              <div>
-                <p className="text-sm text-slate-500">Nombre</p>
-                <p className="font-semibold">{selectedUser.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Documento</p>
-                <p className="font-semibold">{selectedUser.document_id}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Email</p>
-                <p className="font-semibold">{selectedUser.email || "N/D"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Telefono</p>
-                <p className="font-semibold">{selectedUser.phone || "N/D"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Rol</p>
-                <p className="font-semibold">{selectedUser.role}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Estado</p>
-                <StatusBadge active={selectedUser.active} />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Distrito</p>
-                <p className="font-semibold">{selectedUser.district_claro || selectedUser.district || "N/D"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Regional</p>
-                <p className="font-semibold">{selectedUser.regional || "N/D"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Inicio contrato</p>
-                <p className="font-semibold">{selectedUser.contract_start ? String(selectedUser.contract_start).slice(0, 10) : "N/D"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Fin contrato</p>
-                <p className="font-semibold">{selectedUser.contract_end ? String(selectedUser.contract_end).slice(0, 10) : "N/D"}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-sm text-slate-500">Notas</p>
-                <p className="font-semibold">{selectedUser.notes || "Sin notas"}</p>
-              </div>
-            </div>
+            <UserDetailsModalContent
+              data={profileDetail}
+              fallbackUser={selectedUser}
+            />
           )}
         </Modal>
       )}

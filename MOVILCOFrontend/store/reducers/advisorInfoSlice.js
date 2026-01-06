@@ -37,7 +37,6 @@ const initialState = {
 export const loadAdvisorInfo = createAsyncThunk("advisorInfo/loadAdvisorInfo", async (id, { rejectWithValue }) => {
   try {
     const { data } = await axios.get(`${api}/api/users/${id}`)
-    console.log(data);
     return mapAdvisorInfo(data || {})
     
   } catch (err) {

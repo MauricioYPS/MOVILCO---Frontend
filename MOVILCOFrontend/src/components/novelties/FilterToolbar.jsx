@@ -27,7 +27,7 @@ const FilterToolbar = React.memo(function FilterToolbar({ listLoading, onApply, 
   const triggerApply = () => onApply({ q: searchValue.trim(), dateFrom, dateTo });
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-1 flex flex-col md:flex-row gap-1">
+    <div className="bg-white rounded-lg shadow-sm border border-blue-200 p-1 flex flex-col md:flex-row gap-1 ">
       <div className="flex-1 relative">
         <Search size={16} className="absolute left-3 top-3 text-slate-400" />
         <input

@@ -91,6 +91,7 @@ function RoleCard({
               Usuario (ID) asociado
             </label>
             <input
+              editAllowed={disabled}
               value={userId}
               onChange={(e) => onUserIdChange(e.target.value)}
               placeholder="Ej: 12345"

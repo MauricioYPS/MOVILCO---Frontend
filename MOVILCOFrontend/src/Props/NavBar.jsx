@@ -12,10 +12,11 @@ const NAV_ITEMS = [
   { id: "coordinadores", label: "Coordinadores", link: "/Coordinators" },
   { id: "gerentes", label: "Gerentes", link: "/RegionalManager" },
   { id: "recreoCoordinadores", label: "Recreo coordinadores", link: "/WeeklyCoordinatorPage" },
-  { id: "noveltiesRh", label: "Novedades RH", link: "/novedades-rh" },
-  { id: "budgetsRh", label: "Presupuesto RH", link: "/presupuesto-rh" },
-  { id: "userManagerRh", label: "Usuarios RH", link: "/usuarios-rh" },
-  { id: "manualDaysRh", label: "Dias RH", link: "/manual-days-rh" },
+  { id: "noveltiesRh", label: "Novedades", link: "/novedades-rh" },
+  { id: "budgetsRh", label: "Presupuesto", link: "/presupuesto-rh" },
+  { id: "userManagerRh", label: "Usuarios", link: "/usuarios-rh" },
+  { id: "manualDaysRh", label: "Dias Laborados", link: "/manual-days-rh" },
+  { id: "sendMails", label: "Enviar correos", link: "/sendmails" },
 ];
 
 export default function Navbar() {
@@ -43,7 +44,7 @@ export default function Navbar() {
 
   const visibleNavItems = useMemo(() => {
     if (userRole === "ADMIN") {
-      return NAV_ITEMS.filter((item) => ["noveltiesRh", "userManagerRh", "budgetsRh", "manualDaysRh"].includes(item.id));
+      return NAV_ITEMS.filter((item) => ["noveltiesRh", "userManagerRh", "budgetsRh", "manualDaysRh","sendMails"].includes(item.id));
     }
     if (["ASESOR", "ASESORIA", "ASESOR COMERCIAL"].includes(userRole)) {
       return NAV_ITEMS.filter((item) => item.id === "dashboardAsesores");
@@ -57,7 +58,7 @@ export default function Navbar() {
     if (["GERENTE", "GERENCIA", "DIRECTOR", "DIRECTOR REGIONAL"].includes(userRole)) {
       return NAV_ITEMS.filter((item) => ["gerentes"].includes(item.id));
     }
-    return NAV_ITEMS.filter((item) => !["noveltiesRh", "userManagerRh", "manualDaysRh"].includes(item.id));
+    return NAV_ITEMS.filter((item) => !["noveltiesRh", "userManagerRh", "manualDaysRh","sendMails"].includes(item.id));
   }, [userRole]);
 
   const handleLogout = async () => {
